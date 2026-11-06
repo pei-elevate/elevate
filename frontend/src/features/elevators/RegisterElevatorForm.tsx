@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { usePrototype } from '@/app/state';
-import { resubmitRegistration } from '@/features/elevators/rules';
+import { registrationChanges, resubmitRegistration } from '@/features/elevators/rules';
 import { validateRegistration } from '@/features/elevators/validation';
 import { reconcileNotices } from '@/features/permits/rules';
 import { FormShell } from '@/shared/forms/FormShell';
@@ -65,19 +65,7 @@ export function RegisterElevatorForm() {
   async function saveRegistration() {
     await form.save(() => {
       const id = registration?.id || crypto.randomUUID();
-      const changes = {
-        address: values.address.trim(),
-        postal: values.postal,
-        parish: values.parish,
-        owner: values.owner.trim(),
-        nif: values.nif,
-        email: values.email,
-        service: values.service,
-        dge: values.dge?.trim(),
-        block: values.block?.trim(),
-        phone: values.phone?.trim(),
-        ownerType: values.ownerType,
-      };
+      const changes = registrationChanges(values, file?.name, keptDocument);
       const next = registration
         ? resubmitRegistration(s.registrations, registration.id, changes, s.route.role)
         : [

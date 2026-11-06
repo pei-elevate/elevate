@@ -1,3 +1,4 @@
+import type { Values } from '@/shared/forms/types';
 import type { Elevator, ElevatorFilters, Registration } from '@/features/elevators/types';
 import { inspectionHistory } from '@/features/inspections/mocks';
 import type { Request } from '@/features/inspections/types';
@@ -130,4 +131,22 @@ export function resubmitRegistration(
         }
       : registration,
   );
+}
+
+/** Dados guardados ao submeter (ou corrigir) o registo de um elevador. */
+export function registrationChanges(v: Values, fileName: string | undefined, keptDocument: string) {
+  return {
+    address: v.address.trim(),
+    postal: v.postal,
+    parish: v.parish,
+    owner: v.owner.trim(),
+    nif: v.nif,
+    email: v.email,
+    service: v.service,
+    dge: v.dge?.trim(),
+    block: v.block?.trim(),
+    phone: v.phone?.trim(),
+    ownerType: v.ownerType,
+    document: fileName || keptDocument || undefined,
+  };
 }
