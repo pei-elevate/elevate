@@ -13,19 +13,16 @@ import {
   Summary,
   Tabs,
 } from './components';
-import {
-  decideRegistration,
-  defaultElevatorFilters,
-  elevatorHistory,
-  filterElevators,
-  formatDate,
-  localToday,
-  normalize,
-  sendManualNotice,
-} from './data';
-import type { Elevator, ElevatorFilters, ElevatorNotice, Request, UrbanNotice } from './data';
 import { PrototypeForm } from './forms';
 import { usePrototype } from './state';
+import { decideRegistration, defaultElevatorFilters, elevatorHistory, filterElevators } from '@/features/elevators/rules';
+import type { Elevator, ElevatorFilters } from '@/features/elevators/types';
+import type { Request } from '@/features/inspections/types';
+import { sendManualNotice } from '@/features/notices/rules';
+import type { ElevatorNotice } from '@/features/notices/types';
+import type { UrbanNotice } from '@/features/permits/types';
+import { formatDate, localToday } from '@/shared/lib/dates';
+import { normalize } from '@/shared/lib/text';
 
 function Search({
   value,

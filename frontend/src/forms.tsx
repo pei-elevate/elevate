@@ -1,19 +1,13 @@
 import { useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Banner, Button, Heading, Panel, Summary } from './components';
-import {
-  certificateStatus,
-  formatDate,
-  isISODate,
-  localToday,
-  parseDateInput,
-  reconcileNotices,
-  resubmitRegistration,
-  updateSchedule,
-  validateSubmission,
-} from './data';
-import type { Values } from './data';
 import { usePrototype } from './state';
+import { certificateStatus, resubmitRegistration } from '@/features/elevators/rules';
+import { updateSchedule } from '@/features/inspections/rules';
+import { reconcileNotices } from '@/features/permits/rules';
+import type { Values } from '@/shared/forms/types';
+import { validateSubmission } from '@/shared/forms/validation';
+import { formatDate, isISODate, localToday, parseDateInput } from '@/shared/lib/dates';
 
 type Kind = 'registar' | 'novo-aviso' | 'reclamacao' | 'agendar' | 'resultado';
 

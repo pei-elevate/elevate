@@ -1,6 +1,39 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
-import * as data from '../src/data.ts';
+import * as authRoles from '@/shared/auth/roles';
+import * as appNavigation from '@/app/navigation';
+import * as libDates from '@/shared/lib/dates';
+import * as libText from '@/shared/lib/text';
+import * as formsValidation from '@/shared/forms/validation';
+import * as elevatorsMocks from '@/features/elevators/mocks';
+import * as elevatorsRules from '@/features/elevators/rules';
+import * as inspectionsMocks from '@/features/inspections/mocks';
+import * as inspectionsRules from '@/features/inspections/rules';
+import * as complaintsMocks from '@/features/complaints/mocks';
+import * as complaintsRules from '@/features/complaints/rules';
+import * as permitsMocks from '@/features/permits/mocks';
+import * as permitsRules from '@/features/permits/rules';
+import * as noticesMocks from '@/features/notices/mocks';
+import * as noticesRules from '@/features/notices/rules';
+
+// Junta os módulos num só objeto para as asserções ficarem iguais às do protótipo.
+const data = {
+  ...authRoles,
+  ...appNavigation,
+  ...libDates,
+  ...libText,
+  ...formsValidation,
+  ...elevatorsMocks,
+  ...elevatorsRules,
+  ...inspectionsMocks,
+  ...inspectionsRules,
+  ...complaintsMocks,
+  ...complaintsRules,
+  ...permitsMocks,
+  ...permitsRules,
+  ...noticesMocks,
+  ...noticesRules,
+};
 
 test('regras do protótipo', () => {
   assert.equal(

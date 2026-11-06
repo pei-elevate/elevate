@@ -1,14 +1,27 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import * as data from './data';
-import type { Role, ElevatorFilters } from './data';
+import { Banner } from './components';
+import { navigation } from '@/app/navigation';
+import { complaints as seedComplaints } from '@/features/complaints/mocks';
+import {
+  canResolveComplaint as canResolveComplaintRule,
+  resolveComplaint as resolveComplaintRule,
+} from '@/features/complaints/rules';
+import { elevators as seedElevators, registrations as seedRegistrations } from '@/features/elevators/mocks';
+import type { ElevatorFilters } from '@/features/elevators/types';
+import { failedInspections as seedFailedInspections, requests as seedRequests } from '@/features/inspections/mocks';
+import { elevatorNotices as seedElevatorNotices } from '@/features/notices/mocks';
+import { urbanNotices as seedUrbanNotices } from '@/features/permits/mocks';
+import { reconcileNotices } from '@/features/permits/rules';
+import { roles } from '@/shared/auth/roles';
+import type { Role } from '@/shared/auth/roles';
 
 export type Origin = { page: string; label: string };
 export type DashboardView = { view: string; month: string };
 
 function readRoute() {
   const [r, p, id] = window.location.hash.slice(1).split('/');
-  const role: Role = r && Object.hasOwn(data.roles, r) ? (r as Role) : 'proprietario';
+  const role: Role = r && Object.hasOwn(roles, r) ? (r as Role) : 'proprietario';
   let decoded = '';
 
   try {
@@ -17,20 +30,20 @@ function readRoute() {
     decoded = '';
   }
 
-  return { role, page: p || data.navigation[role][0][0], id: decoded };
+  return { role, page: p || navigation[role][0][0], id: decoded };
 }
 
 function useModel() {
   const [route, setRoute] = useState(readRoute);
-  const [elevators, setElevators] = useState(data.elevators);
-  const [requests, setRequests] = useState(data.requests);
-  const [complaints, setComplaints] = useState(data.complaints);
-  const [elevatorNotices, setElevatorNotices] = useState(data.elevatorNotices);
-  const [registrations, setRegistrations] = useState(data.registrations);
+  const [elevators, setElevators] = useState(seedElevators);
+  const [requests, setRequests] = useState(seedRequests);
+  const [complaints, setComplaints] = useState(seedComplaints);
+  const [elevatorNotices, setElevatorNotices] = useState(seedElevatorNotices);
+  const [registrations, setRegistrations] = useState(seedRegistrations);
   const [urbanNotices, setUrbanNotices] = useState(() =>
-    data.reconcileNotices(data.urbanNotices, data.registrations),
+    reconcileNotices(seedUrbanNotices, seedRegistrations),
   );
-  const [failed, setFailed] = useState(data.failedInspections);
+  const [failed, setFailed] = useState(seedFailedInspections);
   const [documents, setDocuments] = useState<Record<string, File>>({});
   const [message, setMessage] = useState('');
   const [elevatorFilters, setElevatorFilters] = useState<Partial<Record<Role, ElevatorFilters>>>(
@@ -88,7 +101,7 @@ function useModel() {
     };
   }, []);
   useEffect(() => {
-    document.title = `${data.roles[route.role]} · Elevate`;
+    document.title = `${roles[route.role]} · Elevate`;
   }, [route]);
 
   function go(page: string, id = '', role = route.role, from: Origin | null = null) {
@@ -124,7 +137,7 @@ function useModel() {
 
   function canResolveComplaint(id: string) {
     const complaint = complaints.find((item) => item.id === id);
-    return !!complaint && data.canResolveComplaint(complaint, elevators, route.role);
+    return !!complaint && canResolveComplaintRule(complaint, elevators, route.role);
   }
 
   function resolveComplaint(id: string) {
@@ -134,7 +147,7 @@ function useModel() {
       'Resolver reclamação',
       'Confirma que o problema foi resolvido?',
       () => {
-        setComplaints((items) => data.resolveComplaint(items, elevators, id, route.role));
+        setComplaints((items) => resolveComplaintRule(items, elevators, id, route.role));
         notify('Reclamação assinalada como resolvida.');
       },
       'Resolver',
@@ -216,7 +229,6 @@ function useModel() {
   };
 }
 
-import { Banner } from './components';
 
 function SummaryReport({ id, result }: { id: string; result: string }) {
   return (

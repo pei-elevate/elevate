@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Banner, Button, Icon } from './components';
-import { navigation, roles } from './data';
-import type { Role } from './data';
 import { Page } from './pages';
 import { PrototypeProvider, usePrototype } from './state';
+import { navigation } from '@/app/navigation';
+import { roles } from '@/shared/auth/roles';
+import type { Role } from '@/shared/auth/roles';
 
 function Interface() {
   const s = usePrototype();
