@@ -1,13 +1,17 @@
+import { ComplaintForm } from '@/features/complaints/ComplaintForm';
 import { ComplaintsPage } from '@/features/complaints/ComplaintsPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ElevatorDetailsPage } from '@/features/elevators/ElevatorDetailsPage';
 import { ElevatorsPage } from '@/features/elevators/ElevatorsPage';
+import { RegisterElevatorForm } from '@/features/elevators/RegisterElevatorForm';
 import { ValidateRegistrationPage } from '@/features/elevators/ValidateRegistrationPage';
 import { FailedInspectionsPage } from '@/features/inspections/FailedInspectionsPage';
+import { InspectionResultForm } from '@/features/inspections/InspectionResultForm';
 import { InspectionsPage } from '@/features/inspections/InspectionsPage';
+import { ScheduleInspectionForm } from '@/features/inspections/ScheduleInspectionForm';
 import { SchedulePage } from '@/features/inspections/SchedulePage';
+import { NewPermitForm } from '@/features/permits/NewPermitForm';
 import { PermitsPage } from '@/features/permits/PermitsPage';
-import { PrototypeForm } from '@/forms';
 import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { usePrototype } from '@/app/state';
@@ -28,14 +32,15 @@ export function Page() {
 
   if (p === 'agendar' && !s.route.id) return <SchedulePage />;
 
-  if (
-    p === 'registar' ||
-    p === 'novo-aviso' ||
-    p === 'reclamacao' ||
-    p === 'agendar' ||
-    p === 'resultado'
-  )
-    return <PrototypeForm kind={p} />;
+  if (p === 'registar') return <RegisterElevatorForm />;
+
+  if (p === 'novo-aviso') return <NewPermitForm />;
+
+  if (p === 'reclamacao') return <ComplaintForm />;
+
+  if (p === 'agendar') return <ScheduleInspectionForm />;
+
+  if (p === 'resultado') return <InspectionResultForm />;
 
   if (p === 'reprovadas') return <FailedInspectionsPage />;
 

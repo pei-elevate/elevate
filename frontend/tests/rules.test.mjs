@@ -4,7 +4,10 @@ import * as authRoles from '@/shared/auth/roles';
 import * as appNavigation from '@/app/navigation';
 import * as libDates from '@/shared/lib/dates';
 import * as libText from '@/shared/lib/text';
-import * as formsValidation from '@/shared/forms/validation';
+import { validateComplaint } from '@/features/complaints/validation';
+import { validateRegistration } from '@/features/elevators/validation';
+import { validateResult, validateSchedule } from '@/features/inspections/validation';
+import { validatePermit } from '@/features/permits/validation';
 import * as elevatorsMocks from '@/features/elevators/mocks';
 import * as elevatorsRules from '@/features/elevators/rules';
 import * as inspectionsMocks from '@/features/inspections/mocks';
@@ -16,13 +19,22 @@ import * as permitsRules from '@/features/permits/rules';
 import * as noticesMocks from '@/features/notices/mocks';
 import * as noticesRules from '@/features/notices/rules';
 
+// Cada formulário tem o seu validador; o mapa mantém as asserções iguais às do protótipo.
+const validators = {
+  registar: validateRegistration,
+  'novo-aviso': validatePermit,
+  reclamacao: validateComplaint,
+  agendar: validateSchedule,
+  resultado: validateResult,
+};
+
 // Junta os módulos num só objeto para as asserções ficarem iguais às do protótipo.
 const data = {
+  validateSubmission: (kind, ...args) => validators[kind](...args),
   ...authRoles,
   ...appNavigation,
   ...libDates,
   ...libText,
-  ...formsValidation,
   ...elevatorsMocks,
   ...elevatorsRules,
   ...inspectionsMocks,
