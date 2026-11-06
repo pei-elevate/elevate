@@ -2,47 +2,49 @@ import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { test } from 'vitest';
-import App from '@/app/App';
+import { createRoutes } from '@/app/App';
 
 // Caminhos relativos a este ficheiro, para a pasta do frontend poder mudar de sítio.
 const root = new URL('../', import.meta.url);
 
 test('ecrãs e rotas do protótipo', async () => {
   const screens = [
-    ['proprietario/painel', 'Painel geral'],
-    ['proprietario/detalhes/01.05.0079', 'Elevador 01.05.0079'],
-    ['proprietario/avisos', 'Página não encontrada'],
-    ['manutencao/elevadores', 'Painel geral'],
-    ['manutencao/detalhes/01.05.0079', 'Elevador 01.05.0079'],
-    ['manutencao/inspecoes', 'Inspeções'],
-    ['manutencao/registar', 'Registar elevador'],
-    ['manutencao/reprovadas', 'Inspeções reprovadas'],
-    ['manutencao/reclamacoes', 'Reclamações'],
-    ['manutencao/reclamacao', 'Registar reclamação'],
-    ['urbanismo/novo-aviso', 'Registar novo alvará'],
-    ['gestor/painel', 'Painel geral'],
-    ['gestor/cadastro', 'Elevadores registados'],
-    ['gestor/historico/01.05.0079', 'Elevador 01.05.0079'],
-    ['gestor/nao-registados', 'Elevadores não registados'],
-    ['gestor/validacoes', 'Validar registo'],
-    ['gestor/pedidos', 'Pedidos de inspeção'],
-    ['gestor/reprovadas', 'Inspeções reprovadas'],
-    ['inspecao/atribuidas', 'Inspeções atribuídas'],
-    ['inspecao/agendar/2026%2F0377', 'Agendar inspeção'],
-    ['inspecao/resultado/2026%2F0341', 'Submeter resultado da inspeção'],
-    ['inspecao/agendar/2026%2F0341', 'Reagendar inspeção'],
-    ['urbanismo/avisos', 'Alvarás registados'],
-    ['inspecao/agendar', 'Agendar inspeções'],
-    ['inspecao/concluidas', 'Página não encontrada'],
-    ['gestor/xyz', 'Página não encontrada'],
-    ['constructor/painel', 'Painel geral'],
-    ['proprietario/detalhes/%ZZ', 'Elevador não encontrado'],
+    ['proprietario', '/painel', 'Painel geral'],
+    ['proprietario', '/detalhes/01.05.0079', 'Elevador 01.05.0079'],
+    ['proprietario', '/avisos', 'Página não encontrada'],
+    ['manutencao', '/elevadores', 'Painel geral'],
+    ['manutencao', '/detalhes/01.05.0079', 'Elevador 01.05.0079'],
+    ['manutencao', '/inspecoes', 'Inspeções'],
+    ['manutencao', '/registar', 'Registar elevador'],
+    ['manutencao', '/reprovadas', 'Inspeções reprovadas'],
+    ['manutencao', '/reclamacoes', 'Reclamações'],
+    ['manutencao', '/reclamacao', 'Registar reclamação'],
+    ['urbanismo', '/novo-aviso', 'Registar novo alvará'],
+    ['gestor', '/painel', 'Painel geral'],
+    ['gestor', '/cadastro', 'Elevadores registados'],
+    ['gestor', '/historico/01.05.0079', 'Elevador 01.05.0079'],
+    ['gestor', '/nao-registados', 'Elevadores não registados'],
+    ['gestor', '/validacoes', 'Validar registo'],
+    ['gestor', '/pedidos', 'Pedidos de inspeção'],
+    ['gestor', '/reprovadas', 'Inspeções reprovadas'],
+    ['inspecao', '/atribuidas', 'Inspeções atribuídas'],
+    ['inspecao', '/agendar/2026%2F0377', 'Agendar inspeção'],
+    ['inspecao', '/resultado/2026%2F0341', 'Submeter resultado da inspeção'],
+    ['inspecao', '/agendar/2026%2F0341', 'Reagendar inspeção'],
+    ['urbanismo', '/avisos', 'Alvarás registados'],
+    ['inspecao', '/agendar', 'Agendar inspeções'],
+    ['inspecao', '/concluidas', 'Página não encontrada'],
+    ['gestor', '/xyz', 'Página não encontrada'],
+    ['proprietario', '/', 'Painel geral'],
+    ['proprietario', '/detalhes/%ZZ', 'Elevador não encontrado'],
   ];
   const images = new Set();
-  for (const [route, title] of screens) {
-    globalThis.window = { location: { hash: '#' + route } };
-    const html = renderToString(createElement(App));
+  for (const [role, path, title] of screens) {
+    const route = role + path;
+    const router = createMemoryRouter(createRoutes(role), { initialEntries: [path] });
+    const html = renderToString(createElement(RouterProvider, { router }));
     assert.match(html, new RegExp(title), route);
     assert.equal(
       (html.match(/<h1[ >]/g) || []).length,

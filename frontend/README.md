@@ -15,14 +15,30 @@ npm test         # Vitest
 npm run build    # type-check and production build
 ```
 
-The **Perfil de demonstração** selector at the bottom of the side menu switches between the five profiles.
+The **Perfil de demonstração** selector at the bottom of the side menu switches between the five profiles. The chosen profile is kept in memory only: on reload the app goes back to Proprietário. Until authentication exists, there is no way to choose the profile from the address.
+
+## Routes
+
+[React Router](https://reactrouter.com/) in data mode. A single catch-all route renders the app, and `app/Page.tsx` picks the screen from the path `/<page>/<id>`. Examples:
+- `/painel`
+- `/elevadores`
+- `/historico/01.05.0079`
+- `/agendar/2026%2F0377`
+
+The id is URL-encoded.
+
+- Pages navigate with `s.go(page, id)` and read `s.route` (`page`, `id`, `role`). They do not use the router directly.
+- With unsaved changes, leaving the page asks for confirmation, including the browser's back and forward buttons (`useBlocker`).
+- After each navigation, focus moves to the page `h1`.
+
+**Server:** any path must return `index.html`. Vite already does this in `npm run dev` and `npm run preview`. With Caddy, use `try_files {path} /index.html` inside the `file_server` block.
 
 ## Where things go
 
 ```
 src/
   main.tsx        entry point
-  app/            app shell: layout and menu (App), page selection (Page),
+  app/            app shell: router and layout (App), page selection (Page),
                   navigation, shared prototype state, global styles
   features/       one folder per feature, with everything it needs
     dashboard/      Painel geral

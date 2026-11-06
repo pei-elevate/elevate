@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router';
 import { Banner } from '@/shared/ui/Banner';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
@@ -258,10 +259,26 @@ function Interface() {
   );
 }
 
+/**
+ * Rotas da app. Uma só rota apanha todos os caminhos: a página é escolhida em Page a partir de
+ * `/página/id`. Usa-se um data router (createBrowserRouter) porque o aviso de alterações por
+ * guardar ao voltar atrás no browser precisa de useBlocker.
+ */
+export function createRoutes(initialRole?: Role) {
+  return [
+    {
+      path: '*',
+      element: (
+        <PrototypeProvider initialRole={initialRole}>
+          <Interface />
+        </PrototypeProvider>
+      ),
+    },
+  ];
+}
+
 export default function App() {
-  return (
-    <PrototypeProvider>
-      <Interface />
-    </PrototypeProvider>
-  );
+  const [router] = useState(() => createBrowserRouter(createRoutes()));
+
+  return <RouterProvider router={router} />;
 }

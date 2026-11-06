@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useBlocker, useLocation, useNavigate } from 'react-router';
 import type { ReactNode } from 'react';
 import { navigation } from '@/app/navigation';
 import { complaints as seedComplaints } from '@/features/complaints/mocks';
@@ -18,13 +19,16 @@ export type Origin = { page: string; label: string };
 
 export type DashboardView = { view: string; month: string };
 
-function readRoute() {
-  const [r, p, id] = window.location.hash.slice(1).split('/');
-  const role: Role = r && Object.hasOwn(roles, r) ? (r as Role) : 'proprietario';
+const unsaved = 'Existem alterações por guardar. Pretende sair e descartá-las?';
+
+/** Página e identificador a partir do caminho (`/página/id`); o perfil vem do estado. */
+function readRoute(pathname: string, role: Role) {
+  // O id pode conter «/» (ex.: 2026/0377), codificado como %2F.
+  const [, p, ...rest] = pathname.split('/');
   let decoded = '';
 
   try {
-    decoded = decodeURIComponent(id || '');
+    decoded = decodeURIComponent(rest.join('/'));
   } catch {
     decoded = '';
   }
@@ -32,8 +36,12 @@ function readRoute() {
   return { role, page: p || navigation[role][0][0], id: decoded };
 }
 
-function useModel() {
-  const [route, setRoute] = useState(readRoute);
+function useModel(initialRole: Role) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Até haver autenticação, o perfil escolhido fica só em memória.
+  const [role, setRole] = useState<Role>(initialRole);
+  const route = readRoute(location.pathname, role);
   const [elevators, setElevators] = useState(seedElevators);
   const [requests, setRequests] = useState(seedRequests);
   const [complaints, setComplaints] = useState(seedComplaints);
@@ -62,61 +70,56 @@ function useModel() {
     tone?: 'danger';
   } | null>(null);
   const dirty = useRef(false);
-  const previous = useRef(window.location.hash);
+  const previous = useRef(location.key);
   const from = useRef('');
   const main = useRef<HTMLElement>(null);
+  // Voltar e avançar no browser com alterações por guardar pedem confirmação
+  // (as navegações da própria app já perguntam em go()).
+  const blocker = useBlocker(({ historyAction }) => historyAction === 'POP' && dirty.current);
   useEffect(() => {
-    const change = () => {
-      if (
-        dirty.current &&
-        !window.confirm('Existem alterações por guardar. Pretende sair e descartá-las?')
-      ) {
-        history.replaceState(null, '', previous.current || '#proprietario/painel');
+    if (blocker.state !== 'blocked') return;
 
-        return;
-      }
+    if (window.confirm(unsaved)) blocker.proceed();
+    else blocker.reset();
+  }, [blocker]);
+  useEffect(() => {
+    // Primeira página: nada a fazer.
+    if (previous.current === location.key) return;
 
-      dirty.current = false;
-      from.current = previous.current;
-      previous.current = window.location.hash;
-      setRoute(readRoute());
-      requestAnimationFrame(() => {
-        main.current?.querySelector<HTMLElement>('h1')?.focus();
-        window.scrollTo(0, 0);
-      });
-    };
+    dirty.current = false;
+    from.current = previous.current;
+    previous.current = location.key;
+    requestAnimationFrame(() => {
+      main.current?.querySelector<HTMLElement>('h1')?.focus();
+      window.scrollTo(0, 0);
+    });
+  }, [location.key]);
+  useEffect(() => {
     const unload = (e: BeforeUnloadEvent) => {
       if (dirty.current) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
-    window.addEventListener('hashchange', change);
     window.addEventListener('beforeunload', unload);
 
-    return () => {
-      window.removeEventListener('hashchange', change);
-      window.removeEventListener('beforeunload', unload);
-    };
+    return () => window.removeEventListener('beforeunload', unload);
   }, []);
   useEffect(() => {
     document.title = `${roles[route.role]} · Elevate`;
-  }, [route]);
+  }, [route.role]);
 
   function go(page: string, id = '', role = route.role, from: Origin | null = null) {
-    if (
-      dirty.current &&
-      !window.confirm('Existem alterações por guardar. Pretende sair e descartá-las?')
-    )
-      return;
+    if (dirty.current && !window.confirm(unsaved)) return;
 
     dirty.current = false;
     setOrigin(from);
-    window.location.hash = `${role}/${page}${id ? '/' + encodeURIComponent(id) : ''}`;
+    setRole(role);
+    navigate(`/${page}${id ? '/' + encodeURIComponent(id) : ''}`);
   }
 
   function back(fallback: string) {
-    if (from.current) history.back();
+    if (from.current) navigate(-1);
     else go(fallback);
   }
 
@@ -230,8 +233,14 @@ function useModel() {
 
 const Context = createContext<ReturnType<typeof useModel> | null>(null);
 
-export function PrototypeProvider({ children }: { children: ReactNode }) {
-  const model = useModel();
+export function PrototypeProvider({
+  children,
+  initialRole = 'proprietario',
+}: {
+  children: ReactNode;
+  initialRole?: Role;
+}) {
+  const model = useModel(initialRole);
 
   return <Context.Provider value={model}>{children}</Context.Provider>;
 }
