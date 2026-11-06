@@ -8,7 +8,7 @@ import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
 import { Panel } from '@/shared/ui/Panel';
 import { Summary } from '@/shared/ui/Summary';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function ValidateRegistrationPage() {
   const s = usePrototype();

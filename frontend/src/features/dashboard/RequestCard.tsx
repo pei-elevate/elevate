@@ -3,7 +3,7 @@ import { formatDate } from '@/shared/lib/dates';
 import { Badge } from '@/shared/ui/Badge';
 import { Icon } from '@/shared/ui/Icon';
 import { Panel } from '@/shared/ui/Panel';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function RequestCard({ request: r }: { request: Request }) {
   const s = usePrototype();

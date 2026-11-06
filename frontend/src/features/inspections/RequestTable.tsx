@@ -6,7 +6,7 @@ import { Button } from '@/shared/ui/Button';
 import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Icon } from '@/shared/ui/Icon';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function RequestTable({
   items,

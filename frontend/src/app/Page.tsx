@@ -10,7 +10,7 @@ import { PermitsPage } from '@/features/permits/PermitsPage';
 import { PrototypeForm } from '@/forms';
 import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function Page() {
   const s = usePrototype();

@@ -13,7 +13,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { Panel } from '@/shared/ui/Panel';
 import { Summary } from '@/shared/ui/Summary';
 import { Tabs } from '@/shared/ui/Tabs';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function ElevatorDetailsPage() {
   const s = usePrototype();

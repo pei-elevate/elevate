@@ -4,7 +4,7 @@ import type { Elevator } from '@/features/elevators/types';
 import { formatDate, localToday } from '@/shared/lib/dates';
 import { Badge, badgeTone } from '@/shared/ui/Badge';
 import { Empty } from '@/shared/ui/Empty';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function InspectionCalendar({
   items,

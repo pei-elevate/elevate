@@ -9,7 +9,7 @@ import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
 import { Search } from '@/shared/ui/Search';
 import { Tabs } from '@/shared/ui/Tabs';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function ComplaintsPage() {
   const s = usePrototype();

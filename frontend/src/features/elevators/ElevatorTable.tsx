@@ -5,7 +5,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Icon } from '@/shared/ui/Icon';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 // No painel do proprietário, guardar a origem para os detalhes oferecerem o regresso ao painel.
 function dashboardOrigin(role: string, page: string) {

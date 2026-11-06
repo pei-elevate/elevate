@@ -1,22 +1,21 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Banner } from '@/shared/ui/Banner';
 import { navigation } from '@/app/navigation';
 import { complaints as seedComplaints } from '@/features/complaints/mocks';
-import {
-  canResolveComplaint as canResolveComplaintRule,
-  resolveComplaint as resolveComplaintRule,
-} from '@/features/complaints/rules';
+import { canResolveComplaint as canResolveComplaintRule, resolveComplaint as resolveComplaintRule } from '@/features/complaints/rules';
 import { elevators as seedElevators, registrations as seedRegistrations } from '@/features/elevators/mocks';
 import type { ElevatorFilters } from '@/features/elevators/types';
+import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
 import { failedInspections as seedFailedInspections, requests as seedRequests } from '@/features/inspections/mocks';
 import { elevatorNotices as seedElevatorNotices } from '@/features/notices/mocks';
 import { urbanNotices as seedUrbanNotices } from '@/features/permits/mocks';
 import { reconcileNotices } from '@/features/permits/rules';
 import { roles } from '@/shared/auth/roles';
 import type { Role } from '@/shared/auth/roles';
+import { Banner } from '@/shared/ui/Banner';
 
 export type Origin = { page: string; label: string };
+
 export type DashboardView = { view: string; month: string };
 
 function readRoute() {
@@ -227,41 +226,6 @@ function useModel() {
     confirm,
     report,
   };
-}
-
-
-function SummaryReport({ id, result }: { id: string; result: string }) {
-  return (
-    <dl className="summary">
-      <div>
-        <dt>Referência</dt>
-        <dd>{id}</dd>
-      </div>
-      <div>
-        <dt>Resultado</dt>
-        <dd>{result}</dd>
-      </div>
-    </dl>
-  );
-}
-
-function DocumentLink({ file }: { file: File }) {
-  const [url, setUrl] = useState('');
-  useEffect(() => {
-    const object = URL.createObjectURL(file);
-    setUrl(object);
-
-    return () => URL.revokeObjectURL(object);
-  }, [file]);
-
-  return (
-    <>
-      <p>{file.name}</p>
-      <a className="button primary" href={url} download={file.name}>
-        Descarregar relatório
-      </a>
-    </>
-  );
 }
 
 const Context = createContext<ReturnType<typeof useModel> | null>(null);

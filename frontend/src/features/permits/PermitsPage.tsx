@@ -9,7 +9,7 @@ import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
 import { Tabs } from '@/shared/ui/Tabs';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function PermitsPage() {
   const s = usePrototype();

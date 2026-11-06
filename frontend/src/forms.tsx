@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
 import { Summary } from '@/shared/ui/Summary';
-import { usePrototype } from './state';
+import { usePrototype } from '@/app/state';
 import { certificateStatus, resubmitRegistration } from '@/features/elevators/rules';
 import { updateSchedule } from '@/features/inspections/rules';
 import { reconcileNotices } from '@/features/permits/rules';

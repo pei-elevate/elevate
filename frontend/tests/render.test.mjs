@@ -3,7 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { test } from 'vitest';
-import App from '@/App';
+import App from '@/app/App';
 
 // Caminhos relativos a este ficheiro, para a pasta do frontend poder mudar de sítio.
 const root = new URL('../', import.meta.url);

@@ -10,7 +10,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { Metric } from '@/shared/ui/Metric';
 import { Panel } from '@/shared/ui/Panel';
 import { Tabs } from '@/shared/ui/Tabs';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function DashboardPage() {
   const s = usePrototype();

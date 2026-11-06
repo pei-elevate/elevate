@@ -3,7 +3,7 @@ import { Banner } from '@/shared/ui/Banner';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Page } from '@/app/Page';
-import { PrototypeProvider, usePrototype } from './state';
+import { PrototypeProvider, usePrototype } from '@/app/state';
 import { navigation } from '@/app/navigation';
 import { roles } from '@/shared/auth/roles';
 import type { Role } from '@/shared/auth/roles';

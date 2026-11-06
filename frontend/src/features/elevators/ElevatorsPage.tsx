@@ -8,7 +8,7 @@ import { Metric } from '@/shared/ui/Metric';
 import { Panel } from '@/shared/ui/Panel';
 import { Search } from '@/shared/ui/Search';
 import { Select } from '@/shared/ui/Select';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 export function ElevatorsPage() {
   const s = usePrototype();

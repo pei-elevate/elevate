@@ -1,7 +1,7 @@
 import { RequestTable } from '@/features/inspections/RequestTable';
 import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
-import { usePrototype } from '@/state';
+import { usePrototype } from '@/app/state';
 
 // Ponto de partida do menu «Agendar»: os pedidos que ainda não têm data.
 export function SchedulePage() {
