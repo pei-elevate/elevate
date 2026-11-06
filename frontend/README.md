@@ -1,4 +1,4 @@
-# Elevate — frontend
+# Elevate frontend
 
 Web interface of Elevate, in European Portuguese. React, TypeScript and Vite.
 
@@ -30,6 +30,31 @@ The id is URL-encoded.
 - Pages navigate with `s.go(page, id)` and read `s.route` (`page`, `id`, `role`). They do not use the router directly.
 - With unsaved changes, leaving the page asks for confirmation, including the browser's back and forward buttons (`useBlocker`).
 - After each navigation, focus moves to the page `h1`.
+
+### Pages by profile
+
+Path each profile uses to open each page. An empty cell means the profile does not use that page. Paths ending in `:id` take an elevator reference or an inspection request number.
+
+| Page (`src/features/`) | Proprietário | Manutenção | Urbanismo | Gestor | Inspeção |
+| --- | --- | --- | --- | --- | --- |
+| `dashboard/DashboardPage.tsx` | `/painel` | | | `/painel` | |
+| `elevators/ElevatorsPage.tsx` | `/elevadores` | `/elevadores` | | `/cadastro` | |
+| `elevators/ElevatorDetailsPage.tsx` | `/detalhes/:id` | `/detalhes/:id` | | `/historico/:id` | `/detalhes/:id` |
+| `elevators/RegisterElevatorForm.tsx` | | `/registar`, `/registar/:id` | | | |
+| `elevators/ValidateRegistrationPage.tsx` | | | | `/validacoes` | |
+| `permits/PermitsPage.tsx` | | | `/avisos` | `/nao-registados` | |
+| `permits/NewPermitForm.tsx` | | | `/novo-aviso` | | |
+| `inspections/InspectionsPage.tsx` | | `/inspecoes` | | `/pedidos` | `/atribuidas` |
+| `inspections/SchedulePage.tsx` | | | | | `/agendar` |
+| `inspections/ScheduleInspectionForm.tsx` | | | | | `/agendar/:id` |
+| `inspections/InspectionResultForm.tsx` | | | | | `/resultado/:id` |
+| `inspections/FailedInspectionsPage.tsx` | | `/reprovadas` | | `/reprovadas` | |
+| `complaints/ComplaintsPage.tsx` | | `/reclamacoes` | | | |
+| `complaints/ComplaintForm.tsx` | | `/reclamacao` | | | |
+
+- Each profile's first page in the side menu opens when you switch to it. The menu itself is defined in `app/navigation.ts`.
+- A page shared by several profiles shows different data and actions for each one. It checks the profile with `s.route.role`.
+- `/registar/:id` corrects a rejected registration.
 
 **Server:** any path must return `index.html`. Vite already does this in `npm run dev` and `npm run preview`. With Caddy, use `try_files {path} /index.html` inside the `file_server` block.
 
