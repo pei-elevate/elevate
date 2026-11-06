@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useBlocker, useLocation, useNavigate } from 'react-router';
 import type { ReactNode } from 'react';
 import { navigation } from '@/app/navigation';
@@ -21,8 +21,14 @@ export type DashboardView = { view: string; month: string };
 
 const unsaved = 'Existem alterações por guardar. Pretende sair e descartá-las?';
 
-/** Página e identificador a partir do caminho (`/página/id`); o perfil vem do estado. */
-function readRoute(pathname: string, role: Role) {
+/**
+ * Página e identificador a partir do caminho (`/página/id`). O perfil não está no endereço:
+ * viaja no estado de cada entrada do histórico, por isso voltar atrás e recarregar repõem o
+ * perfil com que se lá esteve. Sem perfil guardado, usa-se `fallback`.
+ */
+export function readRoute(pathname: string, state: unknown, fallback: Role) {
+  const saved = (state as { role?: string } | null)?.role;
+  const role: Role = saved && Object.hasOwn(roles, saved) ? (saved as Role) : fallback;
   // O id pode conter «/» (ex.: 2026/0377), codificado como %2F.
   const [, p, ...rest] = pathname.split('/');
   let decoded = '';
@@ -39,9 +45,12 @@ function readRoute(pathname: string, role: Role) {
 function useModel(initialRole: Role) {
   const location = useLocation();
   const navigate = useNavigate();
-  // Até haver autenticação, o perfil escolhido fica só em memória.
-  const [role, setRole] = useState<Role>(initialRole);
-  const route = readRoute(location.pathname, role);
+  // Até haver autenticação, o perfil escolhido fica no histórico do browser (não no endereço).
+  const { pathname, state } = location;
+  const route = useMemo(
+    () => readRoute(pathname, state, initialRole),
+    [pathname, state, initialRole],
+  );
   const [elevators, setElevators] = useState(seedElevators);
   const [requests, setRequests] = useState(seedRequests);
   const [complaints, setComplaints] = useState(seedComplaints);
@@ -114,8 +123,11 @@ function useModel(initialRole: Role) {
 
     dirty.current = false;
     setOrigin(from);
-    setRole(role);
-    navigate(`/${page}${id ? '/' + encodeURIComponent(id) : ''}`);
+
+    // Mesma página e perfil: nada muda (como no protótipo com o hash).
+    if (page === route.page && id === route.id && role === route.role) return;
+
+    navigate(`/${page}${id ? '/' + encodeURIComponent(id) : ''}`, { state: { role } });
   }
 
   function back(fallback: string) {

@@ -15,7 +15,7 @@ npm test         # Vitest
 npm run build    # type-check and production build
 ```
 
-The **Perfil de demonstração** selector at the bottom of the side menu switches between the five profiles. The chosen profile is kept in memory only: on reload the app goes back to Proprietário. Until authentication exists, there is no way to choose the profile from the address.
+The **Perfil de demonstração** selector at the bottom of the side menu switches between the five profiles. Until authentication exists, the chosen profile is not part of the address. It is stored with each browser history entry, so Back, Forward and reload restore the profile that page was opened with. An address typed by hand opens as Proprietário.
 
 ## Routes
 

@@ -31,7 +31,7 @@ function Interface() {
   }, [s.modal]);
   useEffect(() => {
     setMenu(false);
-  }, [s.route]);
+  }, [s.route.role, s.route.page, s.route.id]);
   const badges: Record<string, number> = {
     validacoes: s.registrations.filter((r) => r.status === 'Por validar').length,
     'nao-registados': s.urbanNotices.filter(
@@ -277,8 +277,11 @@ export function createRoutes(initialRole?: Role) {
   ];
 }
 
+// Criado uma só vez, na primeira renderização (no módulo, quebraria os testes sem browser).
+let router: ReturnType<typeof createBrowserRouter> | undefined;
+
 export default function App() {
-  const [router] = useState(() => createBrowserRouter(createRoutes()));
+  router ??= createBrowserRouter(createRoutes());
 
   return <RouterProvider router={router} />;
 }
