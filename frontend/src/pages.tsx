@@ -1,18 +1,15 @@
 import { type CSSProperties, useEffect, useId, useRef, useState } from 'react';
-import {
-  Badge,
-  badgeTone,
-  Banner,
-  Button,
-  DataTable,
-  Empty,
-  Heading,
-  Icon,
-  Metric,
-  Panel,
-  Summary,
-  Tabs,
-} from './components';
+import { Badge, badgeTone } from '@/shared/ui/Badge';
+import { Banner } from '@/shared/ui/Banner';
+import { Button } from '@/shared/ui/Button';
+import { DataTable } from '@/shared/ui/DataTable';
+import { Empty } from '@/shared/ui/Empty';
+import { Heading } from '@/shared/ui/Heading';
+import { Icon } from '@/shared/ui/Icon';
+import { Metric } from '@/shared/ui/Metric';
+import { Panel } from '@/shared/ui/Panel';
+import { Summary } from '@/shared/ui/Summary';
+import { Tabs } from '@/shared/ui/Tabs';
 import { PrototypeForm } from './forms';
 import { usePrototype } from './state';
 import { decideRegistration, defaultElevatorFilters, elevatorHistory, filterElevators } from '@/features/elevators/rules';

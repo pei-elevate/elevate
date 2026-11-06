@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Banner } from './components';
+import { Banner } from '@/shared/ui/Banner';
 import { navigation } from '@/app/navigation';
 import { complaints as seedComplaints } from '@/features/complaints/mocks';
 import {
