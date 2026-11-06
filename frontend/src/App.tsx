@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Banner } from '@/shared/ui/Banner';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
-import { Page } from './pages';
+import { Page } from '@/app/Page';
 import { PrototypeProvider, usePrototype } from './state';
 import { navigation } from '@/app/navigation';
 import { roles } from '@/shared/auth/roles';
