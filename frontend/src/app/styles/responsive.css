@@ -1,0 +1,392 @@
+@media (min-width: 1500px) {
+  .app-shell > main {
+    padding-left: 56px;
+    padding-right: 56px;
+  }
+}
+
+@media (max-width: 1250px) {
+  .app-shell > main {
+    padding: 32px 28px 24px;
+  }
+
+  .nav-item {
+    padding: 12px 9px;
+    gap: 10px;
+    font-size: 14px;
+  }
+
+
+  .summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .split-panel {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .form-with-aside {
+    grid-template-columns: minmax(0, 1fr) 240px;
+  }
+
+  .metric {
+    padding: 18px;
+  }
+
+  .request-cards {
+    grid-template-columns: 1fr;
+  }
+
+  th,
+  td {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .two-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .app-shell > main {
+    padding: 28px 22px 22px;
+  }
+
+  .page-heading {
+    flex-wrap: wrap;
+  }
+
+  .form-with-aside,
+  .split-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .selection-list {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .selection-list > .panel-heading {
+    display: none;
+  }
+
+  .selection-list .selection-item {
+    min-width: 190px;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+    padding: 16px;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-heading {
+    flex-wrap: wrap;
+  }
+
+  .form-with-aside .recent-panel {
+    display: block;
+  }
+
+  .banner {
+    flex-wrap: wrap;
+  }
+
+  .banner > .button {
+    margin-left: 52px;
+  }
+
+  .request-card .request-title {
+    flex-wrap: wrap;
+  }
+
+  .page-footer {
+    flex-direction: column;
+  }
+
+  .official-notice {
+    padding: 24px;
+  }
+
+  .filters {
+    gap: 14px;
+  }
+}
+
+/* Em tablets na vertical o menu lateral ocupa demasiado: passa a menu recolhido. */
+@media (max-width: 900px) {
+  .mobile-topbar {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--navy);
+    padding: 14px 20px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mobile-topbar img {
+    width: 110px;
+    height: 36px;
+    object-fit: contain;
+  }
+
+  .mobile-topbar .menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: #194a5c;
+    border: 1px solid #41616e;
+    border-radius: 6px;
+    color: white;
+  }
+
+  .sidebar {
+    display: none;
+    transform: translateX(-100%);
+    top: 64px;
+    width: var(--sidebar);
+    padding-top: 24px;
+  }
+
+  .sidebar.open {
+    display: flex;
+    transform: translateX(0);
+  }
+
+  .sidebar .brand {
+    display: none;
+  }
+
+  .sidebar-bottom {
+    padding-top: 32px;
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 64px 0 0;
+    border: 0;
+    background: #0a2f3f66;
+    z-index: 25;
+    width: 100%;
+  }
+
+  .app-shell > main {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-shell > main {
+    padding: 26px 18px;
+  }
+
+  .filters .filter {
+    flex: 1 1 calc(50% - 7px);
+    max-width: none;
+  }
+
+  .page-heading {
+    margin-bottom: 22px;
+    gap: 18px;
+  }
+
+  h1 {
+    font-size: 27px;
+  }
+
+  .page-heading p {
+    font-size: 14px;
+  }
+
+  .heading-title {
+    gap: 10px;
+  }
+
+  .metrics {
+    gap: 12px;
+  }
+
+  .metric {
+    padding: 17px;
+    min-height: 118px;
+  }
+
+  .metric > span {
+    font-size: 14px;
+  }
+
+  .metric > strong {
+    font-size: 30px;
+  }
+
+  .metric small {
+    font-size: 14px;
+  }
+
+  .metrics.three {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metrics.three .metric:last-child {
+    grid-column: 1/-1;
+  }
+
+  .panel {
+    margin-bottom: 22px;
+  }
+
+  .panel-heading {
+    padding: 18px;
+  }
+
+  .panel-heading h2 {
+    font-size: 18px;
+  }
+
+  .banner {
+    padding: 16px;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .banner > div {
+    min-width: calc(100% - 50px);
+  }
+
+  .banner > .button {
+    margin-left: 48px;
+  }
+
+  .summary {
+    gap: 22px 16px;
+    padding: 20px;
+  }
+
+  .summary dd {
+    font-size: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    padding: 0 20px 20px;
+    gap: 20px;
+  }
+
+  .field.wide {
+    grid-column: auto;
+  }
+
+  .official-notice .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .request-card {
+    padding: 18px;
+  }
+
+  .stepper {
+    gap: 3px;
+  }
+
+  .stepper li {
+    font-size: 14px;
+  }
+
+  .stepper li small {
+    font-size: 14px;
+  }
+
+  .result-box {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .filters {
+    padding: 18px;
+  }
+
+  .filter {
+    min-width: 110px;
+  }
+
+  .pending-row {
+    flex-wrap: wrap;
+  }
+
+  .decision {
+    padding: 20px;
+  }
+
+  .association {
+    margin: 0 20px;
+  }
+
+  .form-actions .button {
+    flex: 1;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .deadline-row {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .deadline-row small {
+    font-size: 14px;
+  }
+
+  .scheduled-visit {
+    padding: 0 18px 20px;
+    gap: 12px;
+  }
+
+  .page-footer {
+    margin-top: 28px;
+  }
+
+  .banner-symbol {
+    width: 30px;
+    height: 30px;
+  }
+
+  .banner > div p {
+    font-size: 14px;
+  }
+
+  dialog {
+    padding: 22px;
+  }
+
+  .feedback {
+    padding: 14px;
+  }
+
+  .official-notice {
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

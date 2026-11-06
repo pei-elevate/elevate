@@ -1,0 +1,210 @@
+.form-with-aside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 24px;
+  align-items: start;
+}
+
+.required-note {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.form-body {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 20px;
+  padding: 0 24px 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.field.wide {
+  grid-column: 1/-1;
+}
+
+.field > label,
+.field-label,
+.decision > label,
+.association > label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field label span,
+.field-label span {
+  color: #9b2c1f;
+}
+
+.field input,
+.field select {
+  width: 100%;
+}
+
+.field small,
+.field-hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.field-error {
+  color: #9b2c1f;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.field [aria-invalid='true'],
+.decision [aria-invalid='true'] {
+  border-color: #af3425;
+  box-shadow: 0 0 0 1px #af3425;
+}
+
+.form-error {
+  background: #fce4df;
+  border: 1px solid #dfb2a9;
+  border-radius: 8px;
+  padding: 16px;
+  color: #9b2c1f;
+  font-size: 14px;
+  margin: 12px 0 20px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 26px;
+}
+
+.recent-panel .panel-heading {
+  padding: 20px;
+}
+
+.recent-panel h2 {
+  font-size: 16px;
+}
+
+.recent-item {
+  padding: 18px 20px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+}
+
+.recent-item span,
+.recent-item small {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.form-body .panel > .banner {
+  margin: 0 24px 24px;
+}
+
+.check-list {
+  list-style: '✓  ';
+  padding: 0 24px 0 42px;
+  line-height: 2;
+  font-size: 14px;
+}
+
+.inset {
+  padding: 0 24px 24px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Botões dentro de tabelas: mais baixos e sem quebrar o texto. */
+.button.small {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.row-actions .button {
+  font-size: 14px;
+}
+
+.danger-text {
+  color: #9b2c1f !important;
+}
+
+.description-cell {
+  max-width: 380px;
+}
+
+.pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.pending-row small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.association {
+  margin: 0 24px;
+  padding: 18px;
+  background: #e9f4f6;
+  border: 1px solid #bddce2;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.association small {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.association select {
+  width: 100%;
+}
+
+.decision {
+  padding: 24px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+}
+
+.decision .form-actions {
+  margin: 4px 0 0;
+}
+
+.validation-panel .summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

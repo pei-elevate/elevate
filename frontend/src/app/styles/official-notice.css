@@ -1,0 +1,40 @@
+.official-notice {
+  padding: 28px;
+}
+
+dialog .official-notice {
+  padding: 0;
+}
+
+.letter-header {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 22px;
+  margin-bottom: 24px;
+}
+
+.letter-header > strong {
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.letter-header p {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.official-notice > p {
+  font-size: 16px;
+  margin-bottom: 22px;
+}
+
+.official-notice > h3 {
+  margin-bottom: 14px;
+}
+
+.official-notice .summary {
+  padding: 10px 0 28px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

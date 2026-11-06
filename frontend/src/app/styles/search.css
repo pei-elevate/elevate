@@ -1,0 +1,151 @@
+.expandable-search {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+/* A pesquisa fica logo a seguir ao último elemento, não encostada à direita. */
+.panel-heading:has(> .expandable-search),
+.panel-heading:has(> .panel-tools .expandable-search) {
+  justify-content: flex-start;
+}
+
+.panel-heading:has(> .expandable-search) .add-button {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+.search-toggle {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--petrol);
+}
+
+.search-toggle:hover,
+.expandable-search.open .search-toggle {
+  background: #e9f2f4;
+}
+
+.search-field {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.expandable-search label {
+  display: flex;
+  min-width: 0;
+}
+
+.search-clear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.search-clear:hover {
+  background: #e9f2f4;
+  color: var(--petrol);
+}
+
+.expandable-search input {
+  box-sizing: border-box;
+  width: 0;
+  min-width: 0;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-color: transparent;
+  opacity: 0;
+  transition:
+    width 0.25s ease,
+    padding 0.25s ease,
+    opacity 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* O espaço para o ✕ só é preciso quando há texto. */
+.expandable-search.open input:placeholder-shown {
+  padding-right: 10px;
+}
+
+.expandable-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.expandable-search.open input {
+  width: 34ch;
+  font-size: 16px;
+  padding: 0 36px 0 10px;
+  border-color: #6b7f89;
+  opacity: 1;
+}
+
+.expandable-search input:focus-visible {
+  outline: none;
+  border-color: var(--petrol);
+}
+
+@media (max-width: 1250px) {
+  .panel-heading:has(.expandable-search) {
+    flex-wrap: wrap;
+  }
+
+  .panel-heading:has(.expandable-search) .panel-tools {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 960px) {
+  .expandable-search {
+    width: 100%;
+  }
+
+  /* Nos filtros, a pesquisa fechada partilha a linha com «Limpar filtros»; aberta, ocupa a linha. */
+  .filters .expandable-search {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .filters .expandable-search.open {
+    flex-basis: 100%;
+  }
+
+  .search-field,
+  .expandable-search label {
+    flex: 1;
+  }
+
+  .expandable-search.open input {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expandable-search input {
+    transition: none;
+  }
+}

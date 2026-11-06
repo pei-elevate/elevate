@@ -1,0 +1,16 @@
+/* Ordem importa: os blocos seguem a ordem do CSS original, e o responsive.css
+   tem de vir depois das regras que ajusta. */
+@import './base.css';
+@import './shell.css';
+@import './ui.css';
+@import './cards.css';
+@import './search.css';
+@import './calendar.css';
+@import './filters.css';
+@import './validation.css';
+@import './official-notice.css';
+@import './deadlines.css';
+@import './forms.css';
+@import './dialogs.css';
+@import './responsive.css';
+@import './file-picker.css';
