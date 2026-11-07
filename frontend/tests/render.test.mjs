@@ -75,7 +75,10 @@ test('ecrãs e rotas do protótipo', async () => {
     for (const match of html.matchAll(/<img[^>]+src="([^"]+)"/g)) images.add(match[1]);
   }
   for (const image of images) {
-    assert.ok((await stat(new URL('public' + image, root))).size > 0, 'Recurso local vazio: ' + image);
+    assert.ok(
+      (await stat(new URL('public' + image, root))).size > 0,
+      'Recurso local vazio: ' + image,
+    );
   }
   assert.match(await readFile(new URL('index.html', root), 'utf8'), /lang="pt-PT"/);
   console.log(

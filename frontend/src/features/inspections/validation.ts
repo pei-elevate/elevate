@@ -45,11 +45,7 @@ export function validateResult(v: Values, file: Upload | null, today = localToda
   if (!file) errors.document = 'Anexe o relatório ou certificado em PDF.';
 
   validateDocument(file, errors);
-  validateDateFields(
-    v,
-    ['performed', v.result === 'Aprovada' ? 'validUntil' : 'deadline'],
-    errors,
-  );
+  validateDateFields(v, ['performed', v.result === 'Aprovada' ? 'validUntil' : 'deadline'], errors);
 
   return errors;
 }

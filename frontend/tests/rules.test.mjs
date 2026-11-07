@@ -351,7 +351,8 @@ test('regras do protótipo', () => {
     'Aberta',
   );
   assert.equal(
-    data.resolveComplaint(many, data.elevators, older.id, 'proprietario', '2026-10-23').at(-1).status,
+    data.resolveComplaint(many, data.elevators, older.id, 'proprietario', '2026-10-23').at(-1)
+      .status,
     'Aberta',
   );
   const otherCompany = { ...older, elevator: '01.05.0247' };

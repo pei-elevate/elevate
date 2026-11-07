@@ -10,5 +10,8 @@ test('o perfil viaja com cada entrada do histórico', () => {
   assert.equal(readRoute('/validacoes', { role: 'xyz' }, 'proprietario').role, 'proprietario');
   // Página inicial do perfil e ids com «/».
   assert.equal(readRoute('/', { role: 'inspecao' }, 'proprietario').page, 'atribuidas');
-  assert.equal(readRoute('/agendar/2026%2F0377', { role: 'inspecao' }, 'proprietario').id, '2026/0377');
+  assert.equal(
+    readRoute('/agendar/2026%2F0377', { role: 'inspecao' }, 'proprietario').id,
+    '2026/0377',
+  );
 });

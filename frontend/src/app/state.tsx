@@ -3,11 +3,20 @@ import { useBlocker, useLocation, useNavigate } from 'react-router';
 import type { ReactNode } from 'react';
 import { navigation } from '@/app/navigation';
 import { complaints as seedComplaints } from '@/features/complaints/mocks';
-import { canResolveComplaint as canResolveComplaintRule, resolveComplaint as resolveComplaintRule } from '@/features/complaints/rules';
-import { elevators as seedElevators, registrations as seedRegistrations } from '@/features/elevators/mocks';
+import {
+  canResolveComplaint as canResolveComplaintRule,
+  resolveComplaint as resolveComplaintRule,
+} from '@/features/complaints/rules';
+import {
+  elevators as seedElevators,
+  registrations as seedRegistrations,
+} from '@/features/elevators/mocks';
 import type { ElevatorFilters } from '@/features/elevators/types';
 import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
-import { failedInspections as seedFailedInspections, requests as seedRequests } from '@/features/inspections/mocks';
+import {
+  failedInspections as seedFailedInspections,
+  requests as seedRequests,
+} from '@/features/inspections/mocks';
 import { elevatorNotices as seedElevatorNotices } from '@/features/notices/mocks';
 import { urbanNotices as seedUrbanNotices } from '@/features/permits/mocks';
 import { reconcileNotices } from '@/features/permits/rules';

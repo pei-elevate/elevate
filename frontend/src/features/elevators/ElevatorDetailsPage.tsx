@@ -205,7 +205,11 @@ export function ElevatorDetailsPage() {
             />
           }
         >
-          {tab === 'Avisos' ? noticeTable : tab === 'Reclamações' ? complaintTable : inspectionTable}
+          {tab === 'Avisos'
+            ? noticeTable
+            : tab === 'Reclamações'
+              ? complaintTable
+              : inspectionTable}
         </Panel>
       ) : (
         <>

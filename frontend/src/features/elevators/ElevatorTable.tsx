@@ -74,11 +74,7 @@ export function ElevatorTable({
             )}
           </td>
           <td>{compact || registry ? e.company : e.inspector}</td>
-          {registry ? (
-            <td>{e.scope}</td>
-          ) : (
-            <td>{formatDate(e.validUntil)}</td>
-          )}
+          {registry ? <td>{e.scope}</td> : <td>{formatDate(e.validUntil)}</td>}
           <td>
             <Badge>{e.status}</Badge>
           </td>

@@ -36,11 +36,7 @@ export function InspectionsPage() {
     <>
       <Heading
         title={
-          maintenance
-            ? 'Inspeções'
-            : assigned
-              ? 'Inspeções atribuídas'
-              : 'Pedidos de inspeção'
+          maintenance ? 'Inspeções' : assigned ? 'Inspeções atribuídas' : 'Pedidos de inspeção'
         }
         description={
           maintenance

@@ -50,10 +50,7 @@ export function RequestCard({ request: r }: { request: Request }) {
           )}
         </div>
         {complete ? (
-          <button
-            className="text-button"
-            onClick={() => s.report(r.id, r.result, undefined, true)}
-          >
+          <button className="text-button" onClick={() => s.report(r.id, r.result, undefined, true)}>
             <Icon name="download" />
             Descarregar relatório
           </button>

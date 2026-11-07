@@ -130,7 +130,9 @@ export function useSubmissionForm({
         </span>
       )}
       <p id="document-hint" className="field-hint">
-        {report ? 'Relatório ou certificado assinado' : 'Contrato de manutenção ou outros documentos'}{' '}
+        {report
+          ? 'Relatório ou certificado assinado'
+          : 'Contrato de manutenção ou outros documentos'}{' '}
         em PDF, até 10 MB.
       </p>
       <div className="file-picker">

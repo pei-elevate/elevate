@@ -129,10 +129,7 @@ export function DashboardPage() {
         tools={
           <div className="panel-tools">
             {viewTabs}
-            <button
-              className="text-button"
-              onClick={() => s.go(owner ? 'elevadores' : 'cadastro')}
-            >
+            <button className="text-button" onClick={() => s.go(owner ? 'elevadores' : 'cadastro')}>
               Ver todos os elevadores <Icon name="arrow" />
             </button>
           </div>

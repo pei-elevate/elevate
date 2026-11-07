@@ -133,9 +133,7 @@ export function FailedInspectionsPage() {
                 <td>
                   <Badge>{f.resolved ? 'Corrigida' : 'Não corrigida'}</Badge>
                 </td>
-                <td>
-                  {f.resolved && active ? <Badge>{active.status}</Badge> : '—'}
-                </td>
+                <td>{f.resolved && active ? <Badge>{active.status}</Badge> : '—'}</td>
                 <td>
                   <button
                     className="text-button"

@@ -124,8 +124,7 @@ export function RegisterElevatorForm() {
         </Banner>
       )}
       <Banner>
-        Após a submissão, o município valida o registo e atribui uma referência interna ao
-        elevador.
+        Após a submissão, o município valida o registo e atribui uma referência interna ao elevador.
       </Banner>
       <FormShell
         form={form}
