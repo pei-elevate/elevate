@@ -68,6 +68,7 @@ export function InspectionCalendar({
 
   function open(value: string) {
     setMonth(value);
+    setDay('');
     setMonths(false);
   }
 
