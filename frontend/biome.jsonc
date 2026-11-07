@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "includes": [
+      "src/**",
+      "tests/**",
+      "*.json",
+      "*.jsonc",
+      "vite.config.ts",
+      "!package-lock.json",
+      "!**/*.css"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "linter": {
+    "rules": {
+      "preset": "recommended",
+      "a11y": {
+        // Desligada por agora: acrescentar type="button" muda o HTML de 38 botões, e um botão
+        // dentro de um formulário deixa de o submeter. Fica para um PR próprio, botão a botão.
+        "useButtonType": "off"
+      }
+    }
+  },
+  "assist": {
+    "enabled": false
+  }
+}

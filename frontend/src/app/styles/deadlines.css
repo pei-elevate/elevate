@@ -1,0 +1,60 @@
+.deadline-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.deadline-row p {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.deadline-row small {
+  display: block;
+  color: var(--muted);
+  margin-top: 7px;
+}
+
+.scheduled-visit {
+  display: flex;
+  gap: 16px;
+  padding: 10px 24px 22px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.scheduled-visit p {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.calendar-day {
+  display: grid;
+  text-align: center;
+  background: #e3f1f4;
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--petrol);
+}
+
+.calendar-day small {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.two-columns .panel .banner {
+  margin: 0 20px 20px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.two-columns .banner-symbol {
+  display: none;
+}

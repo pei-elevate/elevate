@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npx vite build # tsc already ran in typecheck
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
+
+  # Informative only: not in the needs of the ci job.
+  sonar:
+    needs: frontend
+    runs-on: ubuntu-24.04
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      # The secrets context is not allowed in a job-level if, so each step checks the token.
+      - if: env.SONAR_TOKEN != ''
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - if: env.SONAR_TOKEN != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+
+      - if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          projectBaseDir: frontend
+
+  # The only required check in the main ruleset. New jobs (e.g. backend) go in its needs.
+  ci:
+    needs: [frontend]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          if [ "$FAILED" = true ]; then
+            echo "A required job failed or was cancelled."
+            exit 1
+          fi

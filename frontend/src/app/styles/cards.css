@@ -1,0 +1,196 @@
+.request-cards,
+.two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.request-card {
+  padding: 22px;
+}
+
+.request-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.request-title h2 {
+  font-size: 18px;
+}
+
+.request-title p {
+  font-size: 16px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.stepper {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 25px 0;
+  gap: 8px;
+}
+
+.stepper li {
+  flex: 1;
+  display: grid;
+  text-align: center;
+  justify-items: center;
+  gap: 8px;
+  font-size: 14px;
+  position: relative;
+  color: var(--muted);
+}
+
+.stepper li:before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: -50%;
+  width: 100%;
+  height: 1px;
+  background: #dbe4e8;
+  z-index: 0;
+}
+
+.stepper li:first-child:before {
+  display: none;
+}
+
+.stepper li > span {
+  position: relative;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #dbe4e8;
+  background: white;
+  font-size: 14px;
+}
+
+.stepper .done > span {
+  background: var(--petrol);
+  border-color: var(--petrol);
+  color: white;
+}
+
+.stepper [aria-current='step'] > span {
+  background: var(--yellow);
+  border-color: #ffe29c;
+  color: var(--navy);
+}
+
+.stepper li.done strong {
+  color: #12303a;
+}
+
+.stepper li small {
+  font-size: 14px;
+}
+
+.result-box {
+  background: #f6f8f8;
+  border-radius: 9px;
+  padding: 15px 16px;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.result-box > div {
+  display: grid;
+  gap: 6px;
+}
+
+.result-box small {
+  color: var(--muted);
+}
+
+.result-box strong {
+  font-size: 14px;
+}
+
+.result-box .text-button {
+  font-size: 14px;
+}
+
+.metric.green {
+  color: #0b6158;
+}
+
+.metric.yellow {
+  color: #b07800;
+}
+
+.metric.red {
+  color: #9b2c1f;
+}
+
+.metric.blue {
+  color: #1d4f7a;
+}
+
+.metric.green > strong,
+.metric.yellow > strong,
+.metric.red > strong,
+.metric.blue > strong {
+  color: inherit;
+}
+
+.calendar-dots i {
+  display: block;
+  background: var(--muted);
+}
+
+.calendar-dots i.green {
+  background: #0b6158;
+}
+
+.calendar-dots i.yellow {
+  background: #b07800;
+}
+
+.calendar-dots i.red {
+  background: #9b2c1f;
+}
+
+.calendar-dots i.blue {
+  background: #1d4f7a;
+}
+
+.panel-heading .add-button {
+  margin-right: auto;
+  min-height: 36px;
+  padding: 7px 14px 7px 11px;
+}
+
+.filters .add-button {
+  margin-left: auto;
+}
+
+.filters .tabs {
+  padding: 0;
+}
+
+.add-button > span {
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.panel-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+
+.panel-heading .tabs {
+  padding: 0;
+}
