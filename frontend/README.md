@@ -15,6 +15,22 @@ npm test         # Vitest
 npm run build    # type-check and production build
 ```
 
+## CI
+
+Every pull request and every push to `main` runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml):
+
+- **`frontend`:** lint and formatting ([Biome](https://biomejs.dev/), configured in `biome.jsonc`), type check, tests with coverage, and production build.
+- **`sonar`:** sends the analysis and coverage to SonarQube Cloud. It is informative and does not block the merge. It only runs when the `SONAR_TOKEN` secret exists.
+- **`ci`:** passes only if the jobs it depends on passed. It is the check that `main` requires.
+
+To run the same checks locally:
+
+```sh
+npm run lint && npm run typecheck && npm test && npm run build
+```
+
+`npm run format` fixes the formatting and the lint problems that are safe to fix automatically. `npm run test:coverage` writes the coverage report to `coverage/`.
+
 The **Perfil de demonstração** selector at the bottom of the side menu switches between the five profiles. Until authentication exists, the chosen profile is not part of the address. It is stored with each browser history entry, so Back, Forward and reload restore the profile that page was opened with. An address typed by hand opens as Proprietário.
 
 ## Routes
@@ -103,4 +119,4 @@ Inside a feature folder:
 
 ## Moving this folder
 
-The frontend is self-contained: nothing outside this folder depends on it, and nothing in it points outside it. To move it, for example to `apps/web`, run `git mv frontend <new path>`. Then update the paths in CI and Docker Compose once those exist.
+The frontend is self-contained: nothing in it points outside it, and only the CI workflow outside it refers to it. To move it, for example to `apps/web`, run `git mv frontend <new path>`. Then update the paths in `.github/workflows/ci.yml` (`working-directory`, `cache-dependency-path`, the coverage artifact path, the download path and `projectBaseDir`), and in Docker Compose once it exists.
