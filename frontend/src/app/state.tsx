@@ -136,7 +136,7 @@ function useModel(initialRole: Role) {
     // Mesma página e perfil: nada muda (como no protótipo com o hash).
     if (page === route.page && id === route.id && role === route.role) return;
 
-    navigate(`/${page}${id ? '/' + encodeURIComponent(id) : ''}`, { state: { role } });
+    navigate(`/${page}${id ? `/${encodeURIComponent(id)}` : ''}`, { state: { role } });
   }
 
   function back(fallback: string) {

@@ -57,7 +57,7 @@ export function decideRegistration(
         id: ref,
         dge: current.dge || 'Por atribuir',
         owner: current.owner,
-        address: current.address + (current.block ? ' — ' + current.block : ''),
+        address: current.address + (current.block ? ` — ${current.block}` : ''),
         parish: current.parish,
         company: current.company,
         inspector: 'Por atribuir',

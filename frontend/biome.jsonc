@@ -5,6 +5,7 @@
       "src/**",
       "tests/**",
       "*.json",
+      "*.jsonc",
       "vite.config.ts",
       "!package-lock.json",
       "!**/*.css"
@@ -25,7 +26,12 @@
   },
   "linter": {
     "rules": {
-      "recommended": true
+      "preset": "recommended",
+      "a11y": {
+        // Desligada por agora: acrescentar type="button" muda o HTML de 38 botões, e um botão
+        // dentro de um formulário deixa de o submeter. Fica para um PR próprio, botão a botão.
+        "useButtonType": "off"
+      }
     }
   },
   "assist": {

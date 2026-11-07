@@ -102,8 +102,8 @@ export function FailedInspectionsPage() {
               (r) => r.elevator === f.elevator && r.status !== 'Concluído',
             );
             const days = Math.ceil(
-              (new Date(f.deadline + 'T12:00:00').getTime() -
-                new Date(localToday() + 'T12:00:00').getTime()) /
+              (new Date(`${f.deadline}T12:00:00`).getTime() -
+                new Date(`${localToday()}T12:00:00`).getTime()) /
                 86400000,
             );
 

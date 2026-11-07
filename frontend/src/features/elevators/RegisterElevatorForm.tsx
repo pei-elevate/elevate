@@ -98,8 +98,7 @@ export function RegisterElevatorForm() {
 
   if (
     s.route.id &&
-    (!registration ||
-      registration.status !== 'Rejeitado' ||
+    (registration?.status !== 'Rejeitado' ||
       registration.company !== 'Elevar, Lda.' ||
       s.route.role !== 'manutencao')
   ) {

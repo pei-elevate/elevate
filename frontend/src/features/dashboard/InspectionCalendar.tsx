@@ -22,7 +22,7 @@ export function InspectionCalendar({
   const [months, setMonths] = useState(false);
   const [dir, setDir] = useState<'up' | 'down'>('down');
   const ref = useRef<HTMLDivElement>(null);
-  const first = new Date(month + 'T12:00:00');
+  const first = new Date(`${month}T12:00:00`);
   const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   const offset = (first.getDay() + 6) % 7;
   const label = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' }).format(first);
@@ -108,7 +108,7 @@ export function InspectionCalendar({
             const value = `${year}-${String(i + 1).padStart(2, '0')}-01`;
             const marks = all.filter((e) => e.date.startsWith(value.slice(0, 7)));
             const name = new Intl.DateTimeFormat('pt-PT', { month: 'long' }).format(
-              new Date(value + 'T12:00:00'),
+              new Date(`${value}T12:00:00`),
             );
 
             return (
@@ -138,6 +138,7 @@ export function InspectionCalendar({
               </span>
             ))}
             {Array.from({ length: offset }, (_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: células vazias antes do dia 1, sem identidade própria
               <span key={`vazio-${i}`} />
             ))}
             {Array.from({ length: days }, (_, i) => {

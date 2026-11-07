@@ -4,7 +4,7 @@ export function formatDate(v: string) {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-      }).format(new Date(v.slice(0, 10) + 'T12:00:00'))
+      }).format(new Date(`${v.slice(0, 10)}T12:00:00`))
     : '—';
 }
 

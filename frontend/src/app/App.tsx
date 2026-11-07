@@ -29,6 +29,7 @@ function Interface() {
       if (!dialog.current?.open) dialog.current?.showModal();
     } else dialog.current?.close();
   }, [s.modal]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a rota é o gatilho, fecha o menu móvel quando a página muda
   useEffect(() => {
     setMenu(false);
   }, [s.route.role, s.route.page, s.route.id]);
@@ -70,6 +71,7 @@ function Interface() {
 
   return (
     <div className="app-shell">
+      {/* biome-ignore lint/a11y/useValidAnchor: link para saltar para o conteúdo; o href funciona sem JavaScript e o onClick só move o foco */}
       <a
         className="skip-link"
         href="#conteudo"

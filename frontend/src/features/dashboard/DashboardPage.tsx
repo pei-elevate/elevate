@@ -21,7 +21,7 @@ export function DashboardPage() {
   // A vista fica no modelo para se manter ao voltar dos detalhes.
   const saved = s.dashboardView[s.route.role] || {
     view: 'Tabela',
-    month: localToday().slice(0, 7) + '-01',
+    month: `${localToday().slice(0, 7)}-01`,
   };
   const { view, month } = saved;
   const update = (changes: Partial<typeof saved>) =>

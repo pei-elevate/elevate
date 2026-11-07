@@ -10,6 +10,7 @@ export function Tabs({
   label?: string;
 }) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: grupo de botões de filtro, não um formulário; um <fieldset> mudaria o HTML auditado
     <div className="tabs" role="group" aria-label={label}>
       {items.map((item) => (
         <button

@@ -49,12 +49,12 @@ test('ecrãs e rotas do protótipo', async () => {
     assert.equal(
       (html.match(/<h1[ >]/g) || []).length,
       1,
-      route + ' deve ter um único título principal',
+      `${route} deve ter um único título principal`,
     );
     assert.doesNotMatch(
       html,
       />\s*(Dashboard|Submit|Cancel|Sign out|Failed|Choose file)\s*</,
-      route + ' deve estar em português',
+      `${route} deve estar em português`,
     );
     assert.match(html, /Navegação principal/, route);
     if (route === 'gestor/historico/01.05.0079') {
@@ -76,8 +76,8 @@ test('ecrãs e rotas do protótipo', async () => {
   }
   for (const image of images) {
     assert.ok(
-      (await stat(new URL('public' + image, root))).size > 0,
-      'Recurso local vazio: ' + image,
+      (await stat(new URL(`public${image}`, root))).size > 0,
+      `Recurso local vazio: ${image}`,
     );
   }
   assert.match(await readFile(new URL('index.html', root), 'utf8'), /lang="pt-PT"/);
