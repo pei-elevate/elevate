@@ -57,11 +57,15 @@ uv run ruff format .      # format
 uv run fastapi dev api/main.py
 ```
 
-The tests and the lint do not need a database. To run the backend itself without Docker, start only the database with `docker compose up -d db` and point the backend at it: create `app/backend/.env` (ignored by git) with your password from the root `.env`:
+The tests and the lint do not need a database. To run the backend itself without Docker, start only the database with `docker compose up -d db` and point the backend at it: create `app/backend/.env` (ignored by git) with the same values as the root `.env`:
 
 ```sh
-DATABASE_URL=postgresql+psycopg://elevate:<POSTGRES_PASSWORD>@localhost:5432/elevate
+POSTGRES_USER=elevate
+POSTGRES_PASSWORD=<the same password as in the root .env>
+POSTGRES_DB=elevate
 ```
+
+The backend connects to `localhost:5432` by default; `POSTGRES_HOST` and `POSTGRES_PORT` change it.
 
 Frontend (requires Node.js 22.12 or newer):
 
