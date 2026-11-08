@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     defaults:
       run:
-        working-directory: frontend
+        working-directory: app/frontend
     steps:
       - uses: actions/checkout@v7
 
@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: app/frontend/package-lock.json
 
       - run: npm ci
       - run: npm run lint
@@ -36,11 +36,34 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
-          path: frontend/coverage/lcov.info
+          path: app/frontend/coverage/lcov.info
+
+  backend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: app/backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: app/backend/uv.lock
+
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest --cov=api --cov-report=xml
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: app/backend/coverage.xml
 
   # Informative only: not in the needs of the ci job.
   sonar:
-    needs: frontend
+    needs: [frontend, backend]
     runs-on: ubuntu-24.04
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -55,16 +78,28 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: frontend-coverage
-          path: frontend/coverage
+          path: app/frontend/coverage
+
+      - if: env.SONAR_TOKEN != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: backend-coverage
+          path: app/backend
+
+      # One SonarQube Cloud project per app, each configured in its sonar-project.properties.
+      - if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          projectBaseDir: app/frontend
 
       - if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v8
         with:
-          projectBaseDir: frontend
+          projectBaseDir: app/backend
 
-  # The only required check in the main ruleset. New jobs (e.g. backend) go in its needs.
+  # The only required check in the main ruleset. New jobs go in its needs.
   ci:
-    needs: [frontend]
+    needs: [frontend, backend]
     if: always()
     runs-on: ubuntu-24.04
     steps:
