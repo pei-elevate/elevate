@@ -20,7 +20,7 @@ npm run build    # type-check and production build
 Every pull request and every push to `main` runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml):
 
 - **`frontend`:** lint and formatting ([Biome](https://biomejs.dev/), configured in `biome.jsonc`), type check, tests with coverage, and production build.
-- **`sonar`:** sends the analysis and coverage to SonarQube Cloud. It is informative and does not block the merge. It only runs when the `SONAR_TOKEN` secret exists.
+- **`sonar`:** sends the analysis and coverage to SonarQube Cloud, in one project per app: `pei-elevate_elevate-frontend` (configured in `sonar-project.properties`) and `pei-elevate_elevate-backend`. It is informative and does not block the merge. It only runs when the `SONAR_TOKEN` secret exists.
 - **`ci`:** passes only if the jobs it depends on passed. It is the check that `main` requires.
 
 To run the same checks locally:
@@ -119,4 +119,4 @@ Inside a feature folder:
 
 ## Moving this folder
 
-The frontend is self-contained: nothing in it points outside it, and only the CI workflow outside it refers to it. To move it, for example to `apps/web`, run `git mv frontend <new path>`. Then update the paths in `.github/workflows/ci.yml` (`working-directory`, `cache-dependency-path`, the coverage artifact path, the download path and `projectBaseDir`), and in Docker Compose once it exists.
+The frontend is self-contained: nothing in it points outside it. Only the CI workflow and Docker Compose refer to it. To move it, run `git mv app/frontend <new path>`. Then update the paths in `.github/workflows/ci.yml` (`working-directory`, `cache-dependency-path`, the coverage artifact path, the download path and `projectBaseDir`) and in `compose.yml` (`build` and `volumes` of the `frontend` service).
