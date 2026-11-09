@@ -1,0 +1,225 @@
+// Elevate · modelo de dados do MVP, alinhado com os mockups
+
+Enum user_role {
+  owner [note: 'Proprietário']
+  maintenance [note: 'Empresa de manutenção']
+  urban_planning [note: 'Urbanismo']
+  municipal_manager [note: 'Gestor municipal']
+  inspection [note: 'Empresa de inspeção']
+}
+
+Enum owner_type {
+  condominium [note: 'Condomínio']
+  individual [note: 'Pessoa singular']
+  company [note: 'Pessoa coletiva']
+}
+
+Enum registration_status {
+  pending_approval [note: 'Por validar']
+  approved [note: 'Registado']
+  rejected [note: 'Rejeitado']
+}
+
+Enum request_type {
+  periodic [note: 'Inspeção periódica']
+  extraordinary [note: 'Inspeção extraordinária']
+  reinspection [note: 'Reinspeção']
+}
+
+Enum request_status {
+  awaiting_scheduling [note: 'Por agendar. O pedido chega já validado e distribuído pelo MyNet']
+  scheduled [note: 'Agendado']
+  completed [note: 'Concluído']
+}
+
+Enum equipment_type {
+  elevator [note: 'Elevador']
+  goods_lift [note: 'Monta-cargas']
+  escalator [note: 'Escada mecânica']
+  moving_walkway [note: 'Tapete rolante']
+}
+
+Enum elevator_status {
+  active [note: 'Ativo']
+  inactive [note: 'Inativo']
+  sealed [note: 'Selado']
+}
+
+Enum inspection_result {
+  approved [note: 'Aprovada']
+  failed [note: 'Reprovada']
+}
+
+Enum failed_inspection_status {
+  action_required [note: 'Não corrigida']
+  resolved [note: 'Corrigida']
+}
+
+Enum notice_type {
+  inspection_due [note: 'Automático: prazo da inspeção periódica']
+  inspection_required [note: 'Manual: necessidade de inspeção']
+  missing_registration [note: 'Alerta ao proprietário de um alvará sem registo']
+}
+
+Enum complaint_status {
+  open
+  resolved
+}
+
+Table users {
+  id int [pk, increment]
+  external_id varchar [unique, not null, note: 'Id do utilizador no Authentik']
+  name varchar [not null]
+  email varchar [unique, not null]
+  role user_role [not null]
+
+  owner_id int [ref: > owners.id, null, note: 'Só quando role = owner']
+  maintenance_company_id int [ref: > maintenance_companies.id, null, note: 'Só quando role = maintenance']
+  inspection_company_id int [ref: > inspection_companies.id, null, note: 'Só quando role = inspection']
+
+  created_at timestamp [default: `now()`]
+}
+
+Table owners {
+  id int [pk, increment]
+  type owner_type [null, note: 'Preenchido no registo do elevador; o alvará não o pede']
+  name varchar [not null]
+  nif varchar [unique, not null]
+  email varchar [not null, note: 'Pedido no alvará e no registo do elevador; usado nos alertas e lembretes']
+  phone varchar
+}
+
+Table maintenance_companies {
+  id int [pk, increment]
+  name varchar [not null]
+  nif varchar [unique]
+  email varchar
+  phone varchar
+}
+
+Table inspection_companies {
+  id int [pk, increment]
+  name varchar [not null]
+  nif varchar [unique]
+  email varchar
+  phone varchar
+  contract_start date [not null]
+  contract_end date
+
+  Note: 'Empresa com contrato com a CMA. Durante o contrato, faz todos os pedidos de inspeção que a CMA recebe.'
+}
+
+Table permits {
+  id int [pk, increment]
+  created_by int [ref: > users.id, not null]
+  owner_id int [ref: > owners.id, not null]
+  maintenance_company_id int [ref: > maintenance_companies.id, null, note: 'Se conhecida; escolhida da lista de empresas registadas']
+
+  permit_number varchar [unique, not null]
+  permit_date date [not null]
+
+  address varchar [not null]
+  postal_code varchar [not null]
+  parish varchar [not null]
+  num_elevators int [not null]
+
+  created_at timestamp [default: `now()`]
+
+  Note: 'Alvará do Urbanismo. O estado (não registado, parcialmente registado, por validar, registado) é calculado a partir dos elevadores ligados.'
+}
+
+Table elevators {
+  id int [pk, increment]
+  internal_reference varchar [unique, null, note: 'Ex.: 01.05.0079. Atribuída quando o registo é aprovado, com o número seguinte de reference_counters. Único identificador oficial em Aveiro']
+
+  owner_id int [ref: > owners.id, not null]
+  maintenance_company_id int [ref: > maintenance_companies.id, not null]
+  permit_id int [ref: > permits.id, null]
+
+  equipment_type equipment_type [not null, default: 'elevator', note: 'Tipos do formulário oficial de inspeção']
+
+  address varchar [not null]
+  postal_code varchar [not null]
+  parish varchar [not null]
+  building varchar [note: 'Edifício / bloco']
+  service_date date [not null, note: 'Entrada em serviço']
+
+  registration_status registration_status [not null, default: 'pending_approval']
+  rejected_reason varchar
+  registration_document varchar [note: 'Contrato de manutenção ou outro documento de suporte (PDF)']
+
+  status elevator_status [not null, default: 'active', note: 'Inativos e selados não recebem o lembrete de 60 dias']
+
+  created_at timestamp [default: `now()`]
+
+  Note: 'O estado do certificado (válida, a vencer, em atraso, reprovada, por inspecionar) é calculado a partir da última inspeção, como em certificateStatus no frontend; o status guarda o que não dá para calcular. A empresa de inspeção é a que tem contrato em vigor com a CMA.'
+}
+
+Table reference_counters {
+  prefix varchar [pk, note: 'Ex.: 01.05']
+  last_number int [not null, note: 'Começa no maior número já usado no Excel da CMA']
+
+  Note: 'Numeração seguida, sem buracos. Na aprovação: SELECT ... FOR UPDATE, last_number + 1, e o número leva zeros à esquerda até 4 algarismos (10000 fica com 5).'
+}
+
+Table inspection_requests {
+  id int [pk, increment]
+  process_number varchar [unique, not null, note: '"Processo n.º" do MyDoc. Ex.: 2026/0341']
+
+  elevator_id int [ref: > elevators.id, not null, note: 'Encontrado pelo "Registo n.º" do formulário, que é a referência 01.05.xxxx do elevador']
+  inspection_company_id int [ref: > inspection_companies.id, not null, note: 'Empresa com contrato em vigor quando o pedido chegou']
+  original_inspection_id int [ref: > inspections.id, null, note: 'Inspeção reprovada que deu origem a esta reinspeção']
+
+  type request_type [not null]
+  equipment_type equipment_type [not null, note: '"Tipo de equipamento" do formulário']
+  status request_status [not null, default: 'awaiting_scheduling']
+
+  submitted_at timestamp [not null, note: '"Registado em" do MyDoc']
+  scheduled_at timestamp [note: 'Data e hora da inspeção']
+}
+
+Table inspections {
+  id int [pk, increment]
+  request_id int [ref: - inspection_requests.id, unique, not null]
+
+  performed_date date [not null]
+  result inspection_result [not null]
+  valid_until date [note: 'Só quando result = approved']
+  correction_deadline date [note: 'Prazo de correção, só quando result = failed']
+  nonconformities text [note: 'Obrigatório quando result = failed']
+  failed_status failed_inspection_status [note: 'Só quando result = failed']
+  report_file varchar [not null, note: 'Relatório ou certificado (PDF)']
+
+  created_at timestamp [default: `now()`]
+
+  Note: 'Criada quando a empresa de inspeção submete o resultado.'
+}
+
+Table notices {
+  id int [pk, increment]
+  type notice_type [not null]
+
+  elevator_id int [ref: > elevators.id, null]
+  permit_id int [ref: > permits.id, null, note: 'Só quando type = missing_registration']
+  sent_by int [ref: > users.id, null, note: 'Null quando o aviso é automático']
+
+  subject varchar [not null]
+  body text [not null]
+  recipients varchar [not null, note: 'Nomes e emails dos destinatários no momento do envio']
+
+  created_at timestamp [default: `now()`]
+
+  Note: 'Avisos / ofícios enviados por email. Os destinatários são o proprietário e a empresa de manutenção do elevador, ou o proprietário do alvará.'
+}
+
+Table complaints {
+  id int [pk, increment]
+
+  elevator_id int [ref: > elevators.id, not null]
+  maintenance_company_id int [ref: > maintenance_companies.id, not null]
+
+  description varchar [not null]
+  status complaint_status [not null, default: 'open']
+  received_date date [not null]
+  responded_date date
+}

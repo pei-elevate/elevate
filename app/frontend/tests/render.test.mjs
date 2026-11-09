@@ -5,6 +5,7 @@ import { renderToString } from 'react-dom/server';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { test } from 'vitest';
 import { createRoutes } from '@/app/App';
+import { DataTable, hasOverflow } from '@/shared/ui/DataTable';
 
 // Caminhos relativos a este ficheiro, para a pasta do frontend poder mudar de sítio.
 const root = new URL('../', import.meta.url);
@@ -84,4 +85,13 @@ test('ecrãs e rotas do protótipo', async () => {
   console.log(
     `${screens.length} ecrãs e rotas renderizados; recursos locais e estrutura em português: OK`,
   );
+});
+
+test('a região da tabela só recebe foco do teclado quando tem scroll', () => {
+  assert.equal(hasOverflow({ scrollWidth: 900, clientWidth: 600 }), true);
+  assert.equal(hasOverflow({ scrollWidth: 600, clientWidth: 600 }), false);
+  // Antes de medir (render inicial), a região não é uma paragem de Tab.
+  const html = renderToString(createElement(DataTable, { headers: ['A'] }, null));
+  assert.match(html, /role="region"/);
+  assert.doesNotMatch(html, /tabindex/i);
 });
