@@ -15,7 +15,8 @@ export function validateRegistration(v: Values, file: Upload | null, today = loc
   if (!['Condomínio', 'Pessoa singular', 'Pessoa coletiva'].includes(v.ownerType))
     errors.ownerType = 'Selecione o tipo de proprietário.';
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email ?? ''))
+  // As partes do domínio não incluem o ponto, para a regex não recuar (backtracking) em textos longos.
+  if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(v.email ?? ''))
     errors.email = 'Indique um endereço de correio eletrónico válido.';
 
   required('service', 'a data de entrada em serviço');
