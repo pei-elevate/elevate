@@ -2,6 +2,12 @@ from logging.config import fileConfig
 
 from sqlalchemy import create_engine, pool
 
+# Each area's models module is imported so autogenerate sees its tables.
+import api.accounts.models  # noqa: F401
+import api.elevators.models  # noqa: F401
+import api.inspections.models  # noqa: F401
+import api.notices.models  # noqa: F401
+import api.permits.models  # noqa: F401
 from alembic import context
 from api.config import settings
 from api.database import Base
@@ -15,8 +21,6 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import each area's models module here so autogenerate sees its tables,
-# for example: import api.elevators.models
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
