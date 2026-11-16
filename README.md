@@ -57,7 +57,7 @@ uv run ruff format .      # format
 uv run fastapi dev api/main.py
 ```
 
-The tests and the lint do not need a database. To run the backend itself without Docker, start only the database with `docker compose up -d db` and point the backend at it: create `app/backend/.env` (ignored by git) with the same values as the root `.env`:
+The lint does not need a database. The tests need Docker running: the ones that use the `db` or `client` fixtures (`tests/conftest.py`) start their own Postgres with [testcontainers](https://testcontainers-python.readthedocs.io), apply the migrations and roll back each test's changes, so they never touch the database of `docker compose`. To run the backend itself without Docker, start only the database with `docker compose up -d db` and point the backend at it: create `app/backend/.env` (ignored by git) with the same values as the root `.env`:
 
 ```sh
 POSTGRES_USER=elevate
