@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import create_engine, pool
+from sqlalchemy import Connection, create_engine, pool
 
 # Each area's models module is imported so autogenerate sees its tables.
 import api.accounts.models  # noqa: F401
@@ -59,15 +59,25 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # The tests pass their own connection (to the test database) in config.attributes.
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        run_migrations(connection)
+        return
+
     # The URL comes from api.config and is not passed through alembic.ini,
     # whose parser would treat a "%" in the password as a special character.
     connectable = create_engine(settings.database_url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        run_migrations(connection)
 
-        with context.begin_transaction():
-            context.run_migrations()
+
+def run_migrations(connection: Connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
+
+    with context.begin_transaction():
+        context.run_migrations()
 
 
 if context.is_offline_mode():
