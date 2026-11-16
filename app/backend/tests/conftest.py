@@ -1,5 +1,7 @@
 import os
+import re
 from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -14,20 +16,33 @@ from alembic import command
 # api.config refuses to load without these. Tests that do not use the db fixture never
 # connect to the database, so placeholder values are enough; real ones (e.g. from .env)
 # take precedence. The api modules are imported inside the fixtures, after these are set.
+#
+# Warning: api.database.engine and SessionLocal are created from these placeholders, so they
+# point to a database that does not exist. Only get_db is swapped for the test session (see
+# the client fixture). A test that uses engine or SessionLocal directly fails to connect;
+# use the db fixture instead.
 os.environ.setdefault("POSTGRES_USER", "test")
 os.environ.setdefault("POSTGRES_PASSWORD", "test")
 os.environ.setdefault("POSTGRES_DB", "test")
 
-# Same image as the db service in compose.yml.
-POSTGRES_IMAGE = "postgres:18.6-alpine"
-ALEMBIC_INI = Path(__file__).parents[1] / "alembic.ini"
+ROOT = Path(__file__).parents[3]
+ALEMBIC_INI = ROOT / "app" / "backend" / "alembic.ini"
+
+
+def compose_db_image() -> str:
+    """The image of the db service in compose.yml, so the tests use the same Postgres."""
+    compose = (ROOT / "compose.yml").read_text()
+    match = re.search(r"^  db:\n(?:    .*\n)*?    image: (\S+)$", compose, re.M)
+    if match is None:
+        raise RuntimeError("compose.yml has no image for the db service")
+    return match.group(1)
 
 
 @pytest.fixture(scope="session")
 def engine() -> Iterator[Engine]:
     """A real Postgres in Docker, started once for the whole test run, with the migrations
     applied. Only started if a test asks for it (through db or client)."""
-    with PostgresContainer(POSTGRES_IMAGE, driver="psycopg") as postgres:
+    with PostgresContainer(compose_db_image(), driver="psycopg") as postgres:
         engine = create_engine(postgres.get_connection_url())
 
         config = Config(ALEMBIC_INI)
@@ -39,10 +54,10 @@ def engine() -> Iterator[Engine]:
         engine.dispose()
 
 
-@pytest.fixture
-def db(engine: Engine) -> Iterator[Session]:
-    """A session whose changes are rolled back at the end of the test, so each test starts
-    with empty tables. Commits made by the code under test only release a savepoint."""
+@contextmanager
+def rolled_back_session(engine: Engine) -> Iterator[Session]:
+    """A session whose changes are all rolled back when the block ends. Commits made inside
+    it only release a savepoint, so nothing reaches the database."""
     with engine.connect() as connection:
         transaction = connection.begin()
         session = Session(
@@ -54,6 +69,14 @@ def db(engine: Engine) -> Iterator[Session]:
         yield session
         session.close()
         transaction.rollback()
+
+
+@pytest.fixture
+def db(engine: Engine) -> Iterator[Session]:
+    """A session whose changes are rolled back at the end of the test, so each test starts
+    with empty tables."""
+    with rolled_back_session(engine) as session:
+        yield session
 
 
 @pytest.fixture
