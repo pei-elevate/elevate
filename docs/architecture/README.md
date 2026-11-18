@@ -28,3 +28,7 @@ Each area in `app/backend/api/` follows the layers of the architecture diagram:
 | `schemas.py` | Pydantic models (request and response bodies) |
 
 Global modules sit at the top of `api/`: `config.py` (settings from environment variables) and `database.py` (engine, session and the declarative base).
+
+## Authentication (provisional)
+
+Until Authentik is connected, `api/auth.py` takes the user from the `X-User-Id` header, which holds the `external_id` of a row in `users`. After `python -m api.seed`, use `seed-municipal-manager`, `seed-maintenance`, `seed-owner`, `seed-urban-planning` or `seed-inspection`. Endpoints ask for a role with `Depends(require_role(UserRole.X))`. Anyone can send any value, so this must not reach production: when Authentik arrives, only `get_current_user` changes to validate the OIDC token.
