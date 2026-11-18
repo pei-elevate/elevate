@@ -87,6 +87,9 @@ export function ValidateRegistrationPage() {
             : await rejectRegistration(role, reg.id, reason.trim());
 
           s.setPendingRegistrations((items) => items?.filter((r) => r.id !== reg.id) ?? null);
+          // Volta a pedir a lista: um pedido feito antes da decisão é descartado e não pode
+          // trazer de volta o registo já decidido.
+          s.reloadPendingRegistrations();
           reset();
           s.setModal(
             approve
@@ -180,7 +183,11 @@ export function ValidateRegistrationPage() {
                 }}
               >
                 <option value="">Sem alvará associado</option>
-                {permits.map((p) => (
+                {/* O sugerido aparece já, mesmo antes de a lista de alvarás chegar. */}
+                {(reg.permit && !permits.some((p) => p.id === reg.permit?.id)
+                  ? [reg.permit, ...permits]
+                  : permits
+                ).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.permit_number} — {p.address}
                   </option>
