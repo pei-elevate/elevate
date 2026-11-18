@@ -11,6 +11,8 @@ import {
   elevators as seedElevators,
   registrations as seedRegistrations,
 } from '@/features/elevators/mocks';
+import { listPendingRegistrations } from '@/features/elevators/api';
+import type { ApiRegistration } from '@/features/elevators/api';
 import type { ElevatorFilters } from '@/features/elevators/types';
 import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
 import {
@@ -68,6 +70,11 @@ function useModel(initialRole: Role) {
   const [urbanNotices, setUrbanNotices] = useState(() =>
     reconcileNotices(seedUrbanNotices, seedRegistrations),
   );
+  // Registos por validar, vindos da API: o ecrã de validação, o menu e o painel do gestor
+  // mostram os mesmos. null enquanto carregam.
+  const [pendingRegistrations, setPendingRegistrations] = useState<ApiRegistration[] | null>(null);
+  const [pendingError, setPendingError] = useState(false);
+  const [pendingReloads, setPendingReloads] = useState(0);
   const [failed, setFailed] = useState(seedFailedInspections);
   const [documents, setDocuments] = useState<Record<string, File>>({});
   const [message, setMessage] = useState('');
@@ -126,6 +133,25 @@ function useModel(initialRole: Role) {
   useEffect(() => {
     document.title = `${roles[route.role]} · Elevate`;
   }, [route.role]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a página e pendingReloads são gatilhos, para voltar a pedir os registos ao mudar de página ou ao tentar de novo
+  useEffect(() => {
+    // Só o gestor municipal pode ver os registos por validar.
+    if (route.role !== 'gestor') return;
+
+    let cancelled = false;
+    setPendingError(false);
+    listPendingRegistrations(route.role)
+      .then((items) => {
+        if (!cancelled) setPendingRegistrations(items);
+      })
+      .catch(() => {
+        if (!cancelled) setPendingError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [route.role, route.page, pendingReloads]);
 
   function go(page: string, id = '', role = route.role, from: Origin | null = null) {
     if (dirty.current && !window.confirm(unsaved)) return;
@@ -234,6 +260,10 @@ function useModel(initialRole: Role) {
     setElevatorNotices,
     registrations,
     setRegistrations,
+    pendingRegistrations,
+    setPendingRegistrations,
+    pendingError,
+    reloadPendingRegistrations: () => setPendingReloads((n) => n + 1),
     urbanNotices,
     setUrbanNotices,
     failed,
