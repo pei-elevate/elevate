@@ -2,9 +2,11 @@ from datetime import date, datetime
 from enum import StrEnum
 
 from sqlalchemy import ForeignKey, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from api.accounts.models import MaintenanceCompany, Owner
 from api.database import Base, pg_enum
+from api.permits.models import Permit
 
 
 class EquipmentType(StrEnum):
@@ -51,6 +53,10 @@ class Elevator(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("owners.id"))
     maintenance_company_id: Mapped[int] = mapped_column(ForeignKey("maintenance_companies.id"))
     permit_id: Mapped[int | None] = mapped_column(ForeignKey("permits.id"))
+
+    owner: Mapped[Owner] = relationship()
+    maintenance_company: Mapped[MaintenanceCompany] = relationship()
+    permit: Mapped[Permit | None] = relationship()
 
     equipment_type: Mapped[EquipmentType] = mapped_column(
         pg_enum(EquipmentType, "equipment_type"), server_default=EquipmentType.ELEVATOR.value

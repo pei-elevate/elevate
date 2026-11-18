@@ -34,7 +34,7 @@ function Interface() {
     setMenu(false);
   }, [s.route.role, s.route.page, s.route.id]);
   const badges: Record<string, number> = {
-    validacoes: s.registrations.filter((r) => r.status === 'Por validar').length,
+    validacoes: s.pendingRegistrations?.length ?? 0,
     'nao-registados': s.urbanNotices.filter(
       (n) => n.status === 'Não registado' || n.status === 'Parcialmente registado',
     ).length,

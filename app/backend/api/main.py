@@ -1,5 +1,8 @@
 from fastapi import APIRouter, FastAPI
 
+from api.elevators.router import router as registrations_router
+from api.permits.router import router as permits_router
+
 app = FastAPI(
     title="Elevate API",
     docs_url="/api/docs",
@@ -15,4 +18,6 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+router.include_router(registrations_router)
+router.include_router(permits_router)
 app.include_router(router)

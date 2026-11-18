@@ -99,7 +99,7 @@ export function DashboardPage() {
           <>
             <Metric
               label="Validações pendentes"
-              value={s.registrations.filter((r) => r.status === 'Por validar').length}
+              value={s.pendingRegistrations?.length ?? '—'}
               description="Registos para analisar"
               tone="green"
             />
