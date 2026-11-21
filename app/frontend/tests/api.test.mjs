@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test, vi } from 'vitest';
 import { approveRegistration, decisionError } from '@/features/elevators/api';
+import { createPermit, listPermits, permitError } from '@/features/permits/api';
 import { ApiError, api } from '@/shared/api/client';
 
 afterEach(() => {
@@ -54,4 +55,53 @@ test('mensagens de erro da decisão', () => {
   assert.match(decisionError(new ApiError(422, '')), /alvará escolhido já não existe/);
   assert.match(decisionError(new ApiError(500, '')), /Não foi possível guardar/);
   assert.match(decisionError(new TypeError('Failed to fetch')), /Não foi possível guardar/);
+});
+
+const permitBody = {
+  permit_number: '200/2026',
+  permit_date: '2026-11-02',
+  address: 'Rua Nova 1',
+  postal_code: '3800-100',
+  parish: 'Esgueira',
+  num_elevators: 2,
+  owner_name: 'Condomínio Rua Nova',
+  owner_nif: '900000099',
+  owner_email: 'rua.nova@ex.pt',
+  owner_phone: null,
+};
+
+test('createPermit envia o alvará do Urbanismo', async () => {
+  const fetch = stubFetch(201, { id: 9, status: 'missing' });
+
+  const created = await createPermit('urbanismo', permitBody);
+
+  assert.equal(created.id, 9);
+  const [url, init] = fetch.mock.calls[0];
+  assert.equal(url, '/api/permits');
+  assert.equal(init.method, 'POST');
+  assert.equal(init.headers['X-User-Id'], 'seed-urban-planning');
+  assert.deepEqual(JSON.parse(init.body), permitBody);
+});
+
+test('listPermits pede os alvarás em nome do perfil', async () => {
+  const fetch = stubFetch(200, []);
+
+  await listPermits('gestor');
+
+  const [url, init] = fetch.mock.calls[0];
+  assert.equal(url, '/api/permits');
+  assert.equal(init.headers['X-User-Id'], 'seed-municipal-manager');
+});
+
+test('permitError: 409 aponta para o número do alvará', () => {
+  assert.deepEqual(permitError(new ApiError(409, 'x')), {
+    field: 'permit',
+    message: 'Já existe um alvará registado com este número.',
+  });
+  assert.deepEqual(permitError(new ApiError(500, 'x')), {
+    message: 'Não foi possível guardar o alvará. Tente novamente.',
+  });
+  assert.deepEqual(permitError(new TypeError('Failed to fetch')), {
+    message: 'Não foi possível guardar o alvará. Tente novamente.',
+  });
 });

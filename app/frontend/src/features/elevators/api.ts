@@ -1,13 +1,6 @@
 import { ApiError, api } from '@/shared/api/client';
+import type { PermitSummary } from '@/features/permits/api';
 import type { Role } from '@/shared/auth/roles';
-
-export interface PermitSummary {
-  id: number;
-  permit_number: string;
-  permit_date: string;
-  address: string;
-  num_elevators: number;
-}
 
 /** Registo de um elevador como o backend o devolve (`RegistrationOut`). */
 export interface ApiRegistration {
@@ -28,10 +21,6 @@ export interface ApiRegistration {
 
 export function listPendingRegistrations(role: Role) {
   return api<ApiRegistration[]>('/registrations', role);
-}
-
-export function listPermits(role: Role) {
-  return api<PermitSummary[]>('/permits', role);
 }
 
 export function approveRegistration(role: Role, id: number, permitId: number | null) {
