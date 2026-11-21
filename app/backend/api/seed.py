@@ -210,6 +210,7 @@ def seed(db: Session) -> None:
     elevators = {
         reference: Elevator(
             internal_reference=reference,
+            dge_number=f"DGE-10{reference[-3:]}",
             owner_id=owners[owner].id,
             maintenance_company_id=maintenance[company].id,
             address=address,
@@ -332,6 +333,48 @@ def seed(db: Session) -> None:
                 RequestType.PERIODIC,
                 RequestStatus.SCHEDULED,
                 datetime(2026, 11, 19, 10, 0),
+            ),
+        ]
+    )
+
+    # Notices of the elevators of Condomínio Edifício Ria (notices in the mocks)
+    ria = owners["Condomínio Edifício Ria"]
+    recipients = f"{ria.name} <{ria.email}>; {elevar.name} <{elevar.email}>"
+    db.add_all(
+        [
+            Notice(
+                type=NoticeType.INSPECTION_DUE,
+                elevator_id=elevators["01.05.0079"].id,
+                subject="Prazo da inspeção periódica",
+                body=(
+                    "A inspeção periódica do elevador 01.05.0079 deve ser feita nos próximos "
+                    "60 dias. Peça a inspeção à Câmara Municipal de Aveiro."
+                ),
+                recipients=recipients,
+                created_at=datetime(2026, 10, 13, 9, 0),
+            ),
+            Notice(
+                type=NoticeType.INSPECTION_REQUIRED,
+                elevator_id=elevators["01.05.0079"].id,
+                sent_by=manager.id,
+                subject="Inspeção necessária",
+                body=(
+                    "O elevador 01.05.0079 precisa de ser inspecionado. Peça a inspeção à "
+                    "Câmara Municipal de Aveiro com a maior brevidade."
+                ),
+                recipients=recipients,
+                created_at=datetime(2026, 11, 2, 11, 30),
+            ),
+            Notice(
+                type=NoticeType.INSPECTION_DUE,
+                elevator_id=elevators["01.05.0154"].id,
+                subject="Prazo da inspeção periódica",
+                body=(
+                    "A inspeção periódica do elevador 01.05.0154 deve ser feita nos próximos "
+                    "60 dias. Peça a inspeção à Câmara Municipal de Aveiro."
+                ),
+                recipients=recipients,
+                created_at=datetime(2026, 4, 21, 9, 0),
             ),
         ]
     )

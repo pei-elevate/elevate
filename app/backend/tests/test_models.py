@@ -79,3 +79,31 @@ def test_column_settings(table, column):
     server_default = model.server_default.arg if model.server_default is not None else None
     expected = (default.group(1) or default.group(2)) if default else None
     assert str(getattr(server_default, "text", server_default)) == str(expected)
+
+
+def test_elevator_keeps_dge_number(db):
+    from datetime import date
+
+    from api.accounts.models import MaintenanceCompany, Owner, OwnerType
+    from api.elevators.models import Elevator
+
+    owner = Owner(type=OwnerType.CONDOMINIUM, name="Condomínio", nif="900000001", email="a@ex.pt")
+    company = MaintenanceCompany(name="Elevar, Lda.")
+    db.add_all([owner, company])
+    db.flush()
+    fields = {
+        "owner_id": owner.id,
+        "maintenance_company_id": company.id,
+        "address": "Rua de Viseu 12",
+        "postal_code": "3810-000",
+        "parish": "Glória e Vera Cruz",
+        "service_date": date(2015, 1, 1),
+    }
+    with_dge = Elevator(dge_number="DGE-10079", **fields)
+    without_dge = Elevator(**fields)
+    db.add_all([with_dge, without_dge])
+    db.flush()
+    db.expire_all()
+
+    assert db.get(Elevator, with_dge.id).dge_number == "DGE-10079"
+    assert db.get(Elevator, without_dge.id).dge_number is None
