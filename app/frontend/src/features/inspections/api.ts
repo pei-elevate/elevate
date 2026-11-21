@@ -27,13 +27,13 @@ const statuses: Record<ApiAssignedRequest['status'], string> = {
   completed: 'Concluído',
 };
 
-const scopes: Record<ApiAssignedRequest['type'], string> = {
+export const scopes: Record<ApiAssignedRequest['type'], string> = {
   periodic: 'Inspeção',
   extraordinary: 'Inspeção extraordinária',
   reinspection: 'Reinspeção',
 };
 
-const results: Record<'approved' | 'failed', string> = {
+export const results: Record<'approved' | 'failed', string> = {
   approved: 'Aprovada',
   failed: 'Reprovada',
 };
