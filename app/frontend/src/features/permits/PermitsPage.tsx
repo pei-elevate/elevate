@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import type { UrbanNotice } from '@/features/permits/types';
+import type { ReactNode } from 'react';
+import type { ApiPermit, PermitStatus } from '@/features/permits/api';
+import { elevatorCounts, permitStatusLabel } from '@/features/permits/rules';
 import { formatDate, localToday } from '@/shared/lib/dates';
 import { Badge } from '@/shared/ui/Badge';
 import { Banner } from '@/shared/ui/Banner';
@@ -11,17 +13,47 @@ import { Panel } from '@/shared/ui/Panel';
 import { Tabs } from '@/shared/ui/Tabs';
 import { usePrototype } from '@/app/state';
 
+const tabStatus: Record<string, PermitStatus> = {
+  'Por registar': 'missing',
+  'Por validar': 'pending',
+  Registado: 'registered',
+};
+
+/** O gestor só acompanha o que falta registar: os alvarás registados saem da lista dele. */
+export function visiblePermits(permits: ApiPermit[], tab: string, urban: boolean) {
+  return permits.filter(
+    (p) => (urban || p.status !== 'registered') && (tab === 'Todos' || p.status === tabStatus[tab]),
+  );
+}
+
+/** Erro ou carregamento da lista de alvarás; com a lista carregada, mostra `children`. */
+export function PermitsTableState({
+  permits,
+  error,
+  onRetry,
+  children,
+}: {
+  permits: ApiPermit[] | null;
+  error: boolean;
+  onRetry: () => void;
+  children: ReactNode;
+}) {
+  if (error)
+    return (
+      <Banner tone="warning" action={<Button onClick={onRetry}>Tentar novamente</Button>}>
+        Não foi possível carregar os alvarás.
+      </Banner>
+    );
+  if (!permits) return <p role="status">A carregar alvarás…</p>;
+
+  return <>{children}</>;
+}
+
 export function PermitsPage() {
   const s = usePrototype();
   const urban = s.route.role === 'urbanismo';
   const [tab, setTab] = useState('Todos');
-  // O gestor só acompanha o que falta registar: um aviso parcialmente registado ainda tem
-  // elevadores por registar, e os avisos totalmente registados saem da lista.
-  const status = (n: UrbanNotice) =>
-    !urban && n.status === 'Parcialmente registado' ? 'Não registado' : n.status;
-  const items = s.urbanNotices.filter(
-    (n) => (urban || n.status !== 'Registado') && (tab === 'Todos' || status(n) === tab),
-  );
+  const items = visiblePermits(s.permits ?? [], tab, urban);
 
   return (
     <>
@@ -35,78 +67,94 @@ export function PermitsPage() {
       />
       <Panel>
         <div className="filters">
-          <Tabs items={['Todos', 'Não registado', 'Por validar']} value={tab} onChange={setTab} />
+          <Tabs
+            items={
+              urban
+                ? ['Todos', 'Por registar', 'Por validar', 'Registado']
+                : ['Todos', 'Por registar', 'Por validar']
+            }
+            value={tab}
+            onChange={setTab}
+          />
           {urban && (
             <Button className="add-button" onClick={() => s.go('novo-aviso')}>
               <span aria-hidden="true">+</span> Registar novo alvará
             </Button>
           )}
         </div>
-        <DataTable
-          headers={[
-            'Edifício / alvará',
-            'Comunicado em',
-            'Elevadores',
-            'Proprietário',
-            'Estado',
-            ...(urban ? [] : ['Alerta', 'Ação']),
-          ]}
-        >
-          {items.map((n) => (
-            <tr key={n.id}>
-              <td>
-                <strong>{n.address}</strong>
-                <small>Alvará {n.permit}</small>
-              </td>
-              <td>{formatDate(n.date)}</td>
-              <td>{n.count}</td>
-              <td>{n.owner}</td>
-              <td>
-                <Badge>{status(n)}</Badge>
-              </td>
-              {!urban && (
-                <td>{n.alerted ? `Emitido em ${formatDate(n.alerted)}` : 'Não emitido'}</td>
-              )}
-              {!urban && (
-                <td className="action-cell">
-                  {n.status === 'Por validar' ? (
-                    <Button
-                      onClick={() =>
-                        s.go(
-                          'validacoes',
-                          s.registrations.find((r) => r.permit === n.permit)?.id || '',
-                        )
-                      }
-                    >
-                      Analisar
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() =>
-                        s.confirm(
-                          'Emitir alerta ao proprietário',
-                          `Registar um alerta relativo a ${n.address}? Neste protótipo não será enviado correio eletrónico.`,
-                          () => {
-                            s.setUrbanNotices((items) =>
-                              items.map((item) =>
-                                item.id === n.id ? { ...item, alerted: localToday() } : item,
-                              ),
-                            );
-                            s.notify('Alerta registado na demonstração.');
-                          },
-                          'Emitir alerta',
-                        )
-                      }
-                    >
-                      {n.alerted ? 'Reemitir alerta' : 'Emitir alerta ao proprietário'}
-                    </Button>
+        <PermitsTableState permits={s.permits} error={s.permitsError} onRetry={s.reloadPermits}>
+          <DataTable
+            headers={[
+              'Edifício / alvará',
+              'Data do alvará',
+              'Elevadores',
+              'Proprietário',
+              'Estado',
+              ...(urban ? [] : ['Alerta', 'Ação']),
+            ]}
+          >
+            {items.map((p) => {
+              const alerted = s.alerted[p.id] ?? p.last_alert_at?.slice(0, 10);
+
+              return (
+                <tr key={p.id}>
+                  <td>
+                    <strong>{p.address}</strong>
+                    <small>Alvará {p.permit_number}</small>
+                  </td>
+                  <td>{formatDate(p.permit_date)}</td>
+                  <td>
+                    <strong>{p.num_elevators}</strong>
+                    <small>{elevatorCounts(p)}</small>
+                  </td>
+                  <td>{p.owner_name}</td>
+                  <td>
+                    <Badge>{permitStatusLabel(p.status)}</Badge>
+                  </td>
+                  {!urban && (
+                    <td>{alerted ? `Emitido em ${formatDate(alerted)}` : 'Não emitido'}</td>
                   )}
-                </td>
-              )}
-            </tr>
-          ))}
-        </DataTable>
-        {!items.length && <Empty />}
+                  {!urban && (
+                    <td className="action-cell">
+                      {p.status === 'pending' ? (
+                        <Button
+                          onClick={() =>
+                            s.go(
+                              'validacoes',
+                              String(
+                                s.pendingRegistrations?.find((r) => r.permit?.id === p.id)?.id ??
+                                  '',
+                              ),
+                            )
+                          }
+                        >
+                          Analisar
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() =>
+                            s.confirm(
+                              'Emitir alerta ao proprietário',
+                              `Registar um alerta relativo a ${p.address}? Neste protótipo não será enviado correio eletrónico.`,
+                              () => {
+                                s.setAlerted((items) => ({ ...items, [p.id]: localToday() }));
+                                s.notify('Alerta registado na demonstração.');
+                              },
+                              'Emitir alerta',
+                            )
+                          }
+                        >
+                          {alerted ? 'Reemitir alerta' : 'Emitir alerta ao proprietário'}
+                        </Button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </DataTable>
+          {!items.length && <Empty />}
+        </PermitsTableState>
       </Panel>
       {!urban && (
         <Banner>
