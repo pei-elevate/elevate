@@ -20,6 +20,13 @@ export function validateOwnerAndAddress(v: Values, errors: Values) {
   if (!/^\d{9}$/.test(v.nif ?? '')) errors.nif = 'O NIF deve ter 9 algarismos.';
 }
 
+/** Email obrigatório, com a mesma regra no registo de elevador e no registo de alvará. */
+export function validateEmail(v: Values, errors: Values) {
+  // As partes do domínio não incluem o ponto, para a regex não recuar (backtracking) em textos longos.
+  if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(v.email ?? ''))
+    errors.email = 'Indique um endereço de correio eletrónico válido.';
+}
+
 /** O anexo, quando existe, tem de ser um PDF não vazio até 10 MB. */
 export function validateDocument(file: Upload | null, errors: Values) {
   if (
