@@ -110,3 +110,16 @@ def current_inspection_company(db: Session, today: date) -> InspectionCompany | 
         .limit(1)
     )
     return db.scalar(query)
+
+
+def get_elevator(db: Session, elevator_id: int) -> Elevator | None:
+    query = (
+        select(Elevator)
+        .options(
+            joinedload(Elevator.owner),
+            joinedload(Elevator.maintenance_company),
+            joinedload(Elevator.permit),
+        )
+        .where(Elevator.id == elevator_id)
+    )
+    return db.scalar(query)

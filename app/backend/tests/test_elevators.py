@@ -327,3 +327,101 @@ def test_no_inspection_company_in_force(
 ):
     summary = by_reference(client.get(URL, headers=OWNER_A), "01.05.0079")
     assert summary["inspection_company"] is None
+
+
+# Detail
+
+
+@pytest.fixture
+def permit(db: Session, world: World):
+    from api.permits.models import Permit
+
+    permit = Permit(
+        created_by=world.users["urban"].id,
+        owner_id=world.owner_a.id,
+        permit_number="104/2026",
+        permit_date=date(2026, 9, 24),
+        address="Rua 01.05.0079",
+        postal_code="3810-000",
+        parish="Glória e Vera Cruz",
+        num_elevators=1,
+    )
+    db.add(permit)
+    db.flush()
+    world.elevators["01.05.0079"].permit_id = permit.id
+    db.flush()
+    return permit
+
+
+def detail_url(world: World, reference: str) -> str:
+    return f"{URL}/{world.elevators[reference].id}"
+
+
+def test_detail_has_full_data(
+    client: TestClient, db: Session, world: World, in_force: InspectionCompany
+):
+    make_inspection(
+        db,
+        world.elevators["01.05.0079"],
+        "2025/0118",
+        in_force,
+        date(2025, 3, 3),
+        InspectionResult.APPROVED,
+        date(2030, 3, 3),
+    )
+    response = client.get(detail_url(world, "01.05.0079"), headers=OWNER_A)
+    assert response.status_code == 200, response.text
+    detail = response.json()
+    assert detail["internal_reference"] == "01.05.0079"
+    assert detail["dge_number"] == "DGE-10079"
+    assert detail["equipment_type"] == "elevator"
+    assert detail["service_date"] == "2015-01-01"
+    assert detail["created_at"] is not None
+    assert detail["owner"]["nif"] == "900000001"
+    assert detail["owner"]["email"] == "ria@ex.pt"
+    assert detail["owner"]["type"] == "condominium"
+    assert detail["owner"]["phone"] == "234100001"
+    assert detail["maintenance_company"] == {
+        "name": "Elevar, Lda.",
+        "email": "elevar@ex.pt",
+        "phone": "234000001",
+    }
+    assert detail["inspection_company"] == {
+        "name": "Inspeave, Lda.",
+        "email": "inspeave@ex.pt",
+        "phone": "234000003",
+    }
+    assert detail["last_inspection"] == {"performed_date": "2025-03-03", "result": "approved"}
+    assert detail["certificate_status"] == "valid"
+    assert detail["valid_until"] == "2030-03-03"
+
+
+def test_detail_permit_only_for_manager(client: TestClient, world: World, permit):
+    url = detail_url(world, "01.05.0079")
+    assert client.get(url, headers=MANAGER).json()["permit"]["permit_number"] == "104/2026"
+    assert client.get(url, headers=OWNER_A).json()["permit"] is None
+    assert client.get(url, headers=MAINTENANCE_A).json()["permit"] is None
+
+
+def test_detail_of_other_owner_is_404(client: TestClient, world: World):
+    response = client.get(detail_url(world, "01.05.0079"), headers=OWNER_B)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Elevator not found"}
+
+
+def test_detail_of_other_maintenance_company_is_404(client: TestClient, world: World):
+    response = client.get(detail_url(world, "01.05.0247"), headers=MAINTENANCE_A)
+    assert response.status_code == 404
+
+
+def test_detail_of_pending_is_404(client: TestClient, world: World):
+    assert client.get(detail_url(world, "pending"), headers=MANAGER).status_code == 404
+
+
+def test_detail_unknown_is_404(client: TestClient, world: World):
+    assert client.get(f"{URL}/999999", headers=MANAGER).status_code == 404
+
+
+def test_detail_other_roles_are_forbidden(client: TestClient, world: World):
+    url = detail_url(world, "01.05.0079")
+    assert client.get(url, headers={"X-User-Id": "urban"}).status_code == 403

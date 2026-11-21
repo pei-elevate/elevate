@@ -11,8 +11,12 @@ from sqlalchemy.orm import Session
 from api.accounts.models import InspectionCompany, User, UserRole
 from api.elevators import repository
 from api.elevators.certificate import certificate_status
-from api.elevators.models import CertificateStatus, Elevator
+from api.elevators.models import CertificateStatus, Elevator, RegistrationStatus
 from api.inspections.models import Inspection, InspectionRequest
+
+
+class ElevatorNotFound(Exception):
+    """The elevator does not exist, is not approved, or the user may not see it."""
 
 
 @dataclass(frozen=True)
@@ -59,3 +63,31 @@ def _views(db: Session, elevators: list[Elevator], today: date) -> list[Elevator
         )
         views.append(ElevatorView(elevator, inspection, requests.get(elevator.id), company, status))
     return views
+
+
+def get_elevator(db: Session, user: User, elevator_id: int, today: date) -> ElevatorView:
+    return _views(db, [_visible_elevator(db, user, elevator_id)], today)[0]
+
+
+def _visible_elevator(db: Session, user: User, elevator_id: int) -> Elevator:
+    """The elevator, if it is approved and within the user's scope. Otherwise the same
+    error as an unknown one, so its existence is not revealed."""
+    elevator = repository.get_elevator(db, elevator_id)
+    if (
+        elevator is None
+        or elevator.registration_status != RegistrationStatus.APPROVED
+        or not _in_scope(user, elevator)
+    ):
+        raise ElevatorNotFound
+    return elevator
+
+
+def _in_scope(user: User, elevator: Elevator) -> bool:
+    if user.role == UserRole.OWNER:
+        return user.owner_id is not None and elevator.owner_id == user.owner_id
+    if user.role == UserRole.MAINTENANCE:
+        return (
+            user.maintenance_company_id is not None
+            and elevator.maintenance_company_id == user.maintenance_company_id
+        )
+    return user.role == UserRole.MUNICIPAL_MANAGER

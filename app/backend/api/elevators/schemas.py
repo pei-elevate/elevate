@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, StringConstraints
 from api.accounts.models import OwnerType
 from api.elevators.models import CertificateStatus, EquipmentType, RegistrationStatus
 from api.elevators.views import ElevatorView
-from api.inspections.models import RequestType
+from api.inspections.models import InspectionResult, RequestType
 
 
 class OrmSchema(BaseModel):
@@ -119,3 +119,42 @@ def _view_fields(v: ElevatorView) -> dict:
         "valid_until": v.last_inspection.valid_until if v.last_inspection else None,
         "latest_request": v.latest_request,
     }
+
+
+class ContactOut(OrmSchema):
+    name: str
+    email: str | None
+    phone: str | None
+
+
+class LastInspectionOut(OrmSchema):
+    performed_date: date
+    result: InspectionResult
+
+
+class ElevatorOut(ElevatorSummaryOut):
+    """Everything about a registered elevator, for its page."""
+
+    equipment_type: EquipmentType
+    service_date: date
+    created_at: datetime | None
+    owner: OwnerOut
+    maintenance_company: ContactOut
+    inspection_company: ContactOut | None
+    last_inspection: LastInspectionOut | None
+    # Only for the municipal manager.
+    permit: PermitSummary | None
+
+    @classmethod
+    def from_view(cls, v: ElevatorView, *, include_permit: bool = False) -> Self:
+        e = v.elevator
+        return cls.model_validate(
+            {
+                **_view_fields(v),
+                "equipment_type": e.equipment_type,
+                "service_date": e.service_date,
+                "created_at": e.created_at,
+                "last_inspection": v.last_inspection,
+                "permit": e.permit if include_permit else None,
+            }
+        )
