@@ -5,6 +5,7 @@ import { renderToString } from 'react-dom/server';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { test } from 'vitest';
 import { createRoutes } from '@/app/App';
+import { ElevatorsState } from '@/features/elevators/ElevatorsState';
 import { PermitsTableState, visiblePermits } from '@/features/permits/PermitsPage';
 import { DataTable, hasOverflow } from '@/shared/ui/DataTable';
 
@@ -151,4 +152,14 @@ test('a lista de alvarás indica que está a carregar', () => {
     ),
     /tabela/,
   );
+});
+
+test('a lista de elevadores mostra o estado de carregamento e de erro', () => {
+  const loading = renderToString(createElement(ElevatorsState, { error: false, onRetry() {} }));
+  assert.match(loading, /A carregar elevadores…/);
+  assert.doesNotMatch(loading, /Tentar de novo/);
+
+  const failed = renderToString(createElement(ElevatorsState, { error: true, onRetry() {} }));
+  assert.match(failed, /Não foi possível carregar os elevadores\./);
+  assert.match(failed, /Tentar de novo/);
 });

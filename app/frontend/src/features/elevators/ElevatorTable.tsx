@@ -85,7 +85,7 @@ export function ElevatorTable({
               onClick={() =>
                 s.go(
                   detailPage(s.route.role),
-                  e.id,
+                  String(e.key ?? e.id),
                   s.route.role,
                   dashboardOrigin(s.route.role, s.route.page),
                 )

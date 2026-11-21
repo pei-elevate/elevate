@@ -1,6 +1,7 @@
 import { InspectionCalendar } from '@/features/dashboard/InspectionCalendar';
 import { RequestCard } from '@/features/dashboard/RequestCard';
 import { ElevatorTable } from '@/features/elevators/ElevatorTable';
+import { ElevatorsState } from '@/features/elevators/ElevatorsState';
 import { noticeModal } from '@/features/notices/noticeModal';
 import { localToday } from '@/shared/lib/dates';
 import { Banner } from '@/shared/ui/Banner';
@@ -15,9 +16,8 @@ import { usePrototype } from '@/app/state';
 export function DashboardPage() {
   const s = usePrototype();
   const owner = s.route.role === 'proprietario';
-  const items = owner
-    ? s.elevators.filter((e) => e.owner === 'Condomínio Edifício Ria')
-    : s.elevators;
+  // A mesma lista da API que a página dos elevadores (o backend já filtra pelo perfil).
+  const items = s.apiElevators ?? [];
   // A vista fica no modelo para se manter ao voltar dos detalhes.
   const saved = s.dashboardView[s.route.role] || {
     view: 'Tabela',
@@ -135,7 +135,9 @@ export function DashboardPage() {
           </div>
         }
       >
-        {view === 'Calendário' ? (
+        {!s.apiElevators || s.apiElevatorsError ? (
+          <ElevatorsState error={s.apiElevatorsError} onRetry={s.reloadApiElevators} />
+        ) : view === 'Calendário' ? (
           <InspectionCalendar
             items={items}
             month={month}

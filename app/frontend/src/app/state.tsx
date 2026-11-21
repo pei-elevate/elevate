@@ -11,9 +11,14 @@ import {
   elevators as seedElevators,
   registrations as seedRegistrations,
 } from '@/features/elevators/mocks';
-import { listPendingRegistrations } from '@/features/elevators/api';
+import {
+  listElevators,
+  listPendingRegistrations,
+  load,
+  toElevator,
+} from '@/features/elevators/api';
 import type { ApiRegistration } from '@/features/elevators/api';
-import type { ElevatorFilters } from '@/features/elevators/types';
+import type { Elevator, ElevatorFilters } from '@/features/elevators/types';
 import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
 import { loadAssignedRequests } from '@/features/inspections/api';
 import type { Request as InspectionRequest } from '@/features/inspections/types';
@@ -22,6 +27,7 @@ import {
   requests as seedRequests,
 } from '@/features/inspections/mocks';
 import { elevatorNotices as seedElevatorNotices } from '@/features/notices/mocks';
+import type { ElevatorNotice } from '@/features/notices/types';
 import { listPermits } from '@/features/permits/api';
 import type { ApiPermit } from '@/features/permits/api';
 import { urbanNotices as seedUrbanNotices } from '@/features/permits/mocks';
@@ -91,6 +97,13 @@ function useModel(initialRole: Role) {
   const [assignedRequests, setAssignedRequests] = useState<InspectionRequest[] | null>(null);
   const [assignedError, setAssignedError] = useState(false);
   const [assignedReloads, setAssignedReloads] = useState(0);
+  // Elevadores do perfil, vindos da API: a lista e o painel mostram os mesmos. null enquanto
+  // carregam. s.elevators (os mocks) continua para os ecrãs que ainda não usam a API.
+  const [apiElevators, setApiElevators] = useState<Elevator[] | null>(null);
+  const [apiElevatorsError, setApiElevatorsError] = useState(false);
+  const [apiElevatorsReloads, setApiElevatorsReloads] = useState(0);
+  // Avisos do botão «Enviar aviso de inspeção», ainda simulados: ficam até recarregar.
+  const [simulatedNotices, setSimulatedNotices] = useState<ElevatorNotice[]>([]);
   const [failed, setFailed] = useState(seedFailedInspections);
   const [documents, setDocuments] = useState<Record<string, File>>({});
   const [message, setMessage] = useState('');
@@ -177,6 +190,21 @@ function useModel(initialRole: Role) {
 
     return loadAssignedRequests(route.role, setAssignedRequests, () => setAssignedError(true));
   }, [route.role, route.page, assignedReloads]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a página e apiElevatorsReloads são gatilhos, para voltar a pedir os elevadores ao mudar de página ou ao tentar de novo
+  useEffect(() => {
+    // Só o proprietário, a empresa de manutenção e o gestor consultam elevadores.
+    const role = route.role;
+    if (role !== 'proprietario' && role !== 'manutencao' && role !== 'gestor') return;
+
+    setApiElevatorsError(false);
+
+    return load(
+      () => listElevators(role),
+      (items) => setApiElevators(items.map(toElevator)),
+      () => setApiElevatorsError(true),
+    );
+  }, [route.role, route.page, apiElevatorsReloads]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a página e permitsReloads são gatilhos, para voltar a pedir os alvarás ao mudar de página ou ao tentar de novo
   useEffect(() => {
@@ -317,6 +345,11 @@ function useModel(initialRole: Role) {
     assignedRequests,
     assignedError,
     reloadAssignedRequests: () => setAssignedReloads((n) => n + 1),
+    apiElevators,
+    apiElevatorsError,
+    reloadApiElevators: () => setApiElevatorsReloads((n) => n + 1),
+    simulatedNotices,
+    setSimulatedNotices,
     urbanNotices,
     setUrbanNotices,
     failed,
