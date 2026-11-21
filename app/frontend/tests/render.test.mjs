@@ -5,6 +5,7 @@ import { renderToString } from 'react-dom/server';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { test } from 'vitest';
 import { createRoutes } from '@/app/App';
+import { PermitsTableState, visiblePermits } from '@/features/permits/PermitsPage';
 import { DataTable, hasOverflow } from '@/shared/ui/DataTable';
 
 // Caminhos relativos a este ficheiro, para a pasta do frontend poder mudar de sítio.
@@ -94,4 +95,60 @@ test('a região da tabela só recebe foco do teclado quando tem scroll', () => {
   const html = renderToString(createElement(DataTable, { headers: ['A'] }, null));
   assert.match(html, /role="region"/);
   assert.doesNotMatch(html, /tabindex/i);
+});
+
+const permit = (id, status) => ({
+  id,
+  permit_number: `${id}/2026`,
+  permit_date: '2026-09-11',
+  address: 'Rua de Viseu 30',
+  num_elevators: 1,
+  postal_code: '3810-000',
+  parish: 'Glória e Vera Cruz',
+  owner_name: 'Condomínio Viseu 30',
+  registered: status === 'registered' ? 1 : 0,
+  pending: status === 'pending' ? 1 : 0,
+  missing: status === 'missing' ? 1 : 0,
+  status,
+  last_alert_at: null,
+});
+
+test('alvarás visíveis por perfil e separador', () => {
+  const all = [permit(1, 'missing'), permit(2, 'pending'), permit(3, 'registered')];
+  const ids = (items) => items.map((p) => p.id);
+
+  assert.deepEqual(ids(visiblePermits(all, 'Todos', true)), [1, 2, 3]);
+  assert.deepEqual(
+    ids(visiblePermits(all, 'Todos', false)),
+    [1, 2],
+    'o gestor não vê os registados',
+  );
+  assert.deepEqual(ids(visiblePermits(all, 'Por registar', false)), [1]);
+  assert.deepEqual(ids(visiblePermits(all, 'Por validar', true)), [2]);
+  assert.deepEqual(ids(visiblePermits(all, 'Registado', true)), [3]);
+});
+
+test('a lista de alvarás mostra o erro de carregamento em vez de uma lista vazia', () => {
+  const html = renderToString(
+    createElement(PermitsTableState, { permits: null, error: true, onRetry: () => {} }, 'tabela'),
+  );
+
+  assert.match(html, /Não foi possível carregar os alvarás\./);
+  assert.match(html, /Tentar novamente/);
+  assert.doesNotMatch(html, /tabela|Sem resultados/);
+});
+
+test('a lista de alvarás indica que está a carregar', () => {
+  const html = renderToString(
+    createElement(PermitsTableState, { permits: null, error: false, onRetry: () => {} }, 'tabela'),
+  );
+
+  assert.match(html, /A carregar alvarás…/);
+  assert.doesNotMatch(html, /tabela/);
+  assert.match(
+    renderToString(
+      createElement(PermitsTableState, { permits: [], error: false, onRetry: () => {} }, 'tabela'),
+    ),
+    /tabela/,
+  );
 });

@@ -206,13 +206,19 @@ export function useSubmissionForm({
     onValid();
   }
 
-  /** Gravação simulada: espera um pouco, aplica as alterações e limpa a marca de alterações. */
-  async function save(apply: () => void) {
+  /**
+   * Gravação: espera um pouco, aplica as alterações (que podem ir à API) e limpa a marca de
+   * alterações. Se `apply` falhar, o erro passa a quem chamou e as alterações ficam por guardar.
+   */
+  async function save(apply: () => void | Promise<void>) {
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    apply();
-    dirty.current = false;
-    setSaving(false);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await apply();
+      dirty.current = false;
+    } finally {
+      setSaving(false);
+    }
   }
 
   return {

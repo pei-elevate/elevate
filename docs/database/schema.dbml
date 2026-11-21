@@ -125,7 +125,7 @@ Table permits {
 
   created_at timestamp [default: `now()`]
 
-  Note: 'Alvará do Urbanismo. O estado (não registado, parcialmente registado, por validar, registado) é calculado a partir dos elevadores ligados.'
+  Note: 'Alvará do Urbanismo. O estado (não registado, por validar, registado) é calculado a partir dos elevadores ligados.'
 }
 
 Table elevators {

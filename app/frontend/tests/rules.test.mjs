@@ -16,6 +16,7 @@ import * as complaintsMocks from '@/features/complaints/mocks';
 import * as complaintsRules from '@/features/complaints/rules';
 import * as permitsMocks from '@/features/permits/mocks';
 import * as permitsRules from '@/features/permits/rules';
+import { elevatorCounts, permitStatusLabel } from '@/features/permits/rules';
 import * as noticesMocks from '@/features/notices/mocks';
 import * as noticesRules from '@/features/notices/rules';
 
@@ -383,5 +384,19 @@ test('regras do protótipo', () => {
   );
   console.log(
     'Regressões da auditoria: validade, reapresentação, permissões EMA e reagendamento: OK',
+  );
+});
+
+test('rótulos e contagens dos alvarás', () => {
+  assert.equal(permitStatusLabel('missing'), 'Por registar');
+  assert.equal(permitStatusLabel('pending'), 'Por validar');
+  assert.equal(permitStatusLabel('registered'), 'Registado');
+  assert.equal(
+    elevatorCounts({ missing: 1, pending: 0, registered: 1 }),
+    '1 por registar · 0 por validar · 1 registado',
+  );
+  assert.equal(
+    elevatorCounts({ missing: 0, pending: 1, registered: 0 }),
+    '0 por registar · 1 por validar · 0 registados',
   );
 });

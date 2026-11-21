@@ -32,7 +32,7 @@ from api.inspections.models import (
     RequestStatus,
     RequestType,
 )
-from api.notices.models import Notice  # noqa: F401  (so every table is known to Base)
+from api.notices.models import Notice, NoticeType
 from api.permits.models import Permit
 
 POSTAL_CODE = "3810-000"
@@ -112,6 +112,12 @@ def seed(db: Session) -> None:
         email="ana.rodrigues@exemplo.pt",
         role=UserRole.URBAN_PLANNING,
     )
+    manager = User(
+        external_id="seed-municipal-manager",
+        name="Augusta Jesus",
+        email="augusta.jesus@exemplo.pt",
+        role=UserRole.MUNICIPAL_MANAGER,
+    )
     db.add_all(
         [
             User(
@@ -129,12 +135,7 @@ def seed(db: Session) -> None:
                 maintenance_company_id=elevar.id,
             ),
             urbanismo,
-            User(
-                external_id="seed-municipal-manager",
-                name="Augusta Jesus",
-                email="augusta.jesus@exemplo.pt",
-                role=UserRole.MUNICIPAL_MANAGER,
-            ),
+            manager,
             User(
                 external_id="seed-inspection",
                 name="Inspeave, Lda.",
@@ -187,6 +188,23 @@ def seed(db: Session) -> None:
     }
     db.add_all(permits.values())
     db.flush()
+
+    # The missing-registration alert already sent for 097/2026 (alerted in permits/mocks.ts)
+    viseu = owners["Condomínio Viseu 30"]
+    db.add(
+        Notice(
+            type=NoticeType.MISSING_REGISTRATION,
+            permit_id=permits["097/2026"].id,
+            sent_by=manager.id,
+            subject="Elevador sem registo",
+            body=(
+                "O alvará 097/2026 inclui um elevador que ainda não foi registado na "
+                "plataforma elevate. Peça à empresa de manutenção que faça o registo."
+            ),
+            recipients=f"{viseu.name} <{viseu.email}>",
+            created_at=datetime(2026, 9, 28, 10, 0),
+        )
+    )
 
     # Registered elevators (elevators/mocks.ts)
     elevators = {

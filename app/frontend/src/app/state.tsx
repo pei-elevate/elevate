@@ -22,6 +22,8 @@ import {
   requests as seedRequests,
 } from '@/features/inspections/mocks';
 import { elevatorNotices as seedElevatorNotices } from '@/features/notices/mocks';
+import { listPermits } from '@/features/permits/api';
+import type { ApiPermit } from '@/features/permits/api';
 import { urbanNotices as seedUrbanNotices } from '@/features/permits/mocks';
 import { reconcileNotices } from '@/features/permits/rules';
 import { roles } from '@/shared/auth/roles';
@@ -77,6 +79,13 @@ function useModel(initialRole: Role) {
   const [pendingRegistrations, setPendingRegistrations] = useState<ApiRegistration[] | null>(null);
   const [pendingError, setPendingError] = useState(false);
   const [pendingReloads, setPendingReloads] = useState(0);
+  // Alvarás vindos da API, com o estado calculado no backend: o Urbanismo e o gestor veem
+  // os mesmos. null enquanto carregam.
+  const [permits, setPermits] = useState<ApiPermit[] | null>(null);
+  const [permitsError, setPermitsError] = useState(false);
+  const [permitsReloads, setPermitsReloads] = useState(0);
+  // Data do alerta simulado («Emitir alerta») por alvará, até haver a story do alerta.
+  const [alerted, setAlerted] = useState<Record<number, string>>({});
   // Pedidos atribuídos à empresa de inspeção, vindos da API: a lista e o contador do menu
   // mostram os mesmos. null enquanto carregam.
   const [assignedRequests, setAssignedRequests] = useState<InspectionRequest[] | null>(null);
@@ -168,6 +177,26 @@ function useModel(initialRole: Role) {
 
     return loadAssignedRequests(route.role, setAssignedRequests, () => setAssignedError(true));
   }, [route.role, route.page, assignedReloads]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a página e permitsReloads são gatilhos, para voltar a pedir os alvarás ao mudar de página ou ao tentar de novo
+  useEffect(() => {
+    // Só o Urbanismo e o gestor municipal podem ver os alvarás.
+    if (route.role !== 'urbanismo' && route.role !== 'gestor') return;
+
+    let cancelled = false;
+    setPermitsError(false);
+    listPermits(route.role)
+      .then((items) => {
+        if (!cancelled) setPermits(items);
+      })
+      .catch(() => {
+        if (!cancelled) setPermitsError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [route.role, route.page, permitsReloads]);
 
   function go(page: string, id = '', role = route.role, from: Origin | null = null) {
     if (dirty.current && !window.confirm(unsaved)) return;
@@ -280,6 +309,11 @@ function useModel(initialRole: Role) {
     setPendingRegistrations,
     pendingError,
     reloadPendingRegistrations: () => setPendingReloads((n) => n + 1),
+    permits,
+    permitsError,
+    reloadPermits: () => setPermitsReloads((n) => n + 1),
+    alerted,
+    setAlerted,
     assignedRequests,
     assignedError,
     reloadAssignedRequests: () => setAssignedReloads((n) => n + 1),
