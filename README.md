@@ -1,5 +1,11 @@
 # Elevate
 
+[![CI](https://github.com/pei-elevate/elevate/actions/workflows/ci.yml/badge.svg)](https://github.com/pei-elevate/elevate/actions/workflows/ci.yml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](app/frontend)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](compose.yml)
+
 Information system for the management and inspection of municipal elevators, developed for the Câmara Municipal de Aveiro as a Projeto em Engenharia Informática project at the Universidade de Aveiro.
 
 Project site: https://pei-elevate.github.io/elevate-site/
