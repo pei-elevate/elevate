@@ -37,7 +37,7 @@ function Interface() {
     validacoes: s.pendingRegistrations?.length ?? 0,
     'nao-registados': s.permits?.filter((p) => p.status !== 'registered').length ?? 0,
     reprovadas: s.failed.filter((f) => !f.resolved).length,
-    atribuidas: s.requests.filter((r) => r.status !== 'Concluído').length,
+    atribuidas: (s.assignedRequests ?? []).filter((r) => r.status !== 'Concluído').length,
     agendar: s.requests.filter((r) => r.status === 'Por agendar').length,
   };
 

@@ -15,6 +15,8 @@ import { listPendingRegistrations } from '@/features/elevators/api';
 import type { ApiRegistration } from '@/features/elevators/api';
 import type { ElevatorFilters } from '@/features/elevators/types';
 import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
+import { loadAssignedRequests } from '@/features/inspections/api';
+import type { Request as InspectionRequest } from '@/features/inspections/types';
 import {
   failedInspections as seedFailedInspections,
   requests as seedRequests,
@@ -84,6 +86,11 @@ function useModel(initialRole: Role) {
   const [permitsReloads, setPermitsReloads] = useState(0);
   // Data do alerta simulado («Emitir alerta») por alvará, até haver a story do alerta.
   const [alerted, setAlerted] = useState<Record<number, string>>({});
+  // Pedidos atribuídos à empresa de inspeção, vindos da API: a lista e o contador do menu
+  // mostram os mesmos. null enquanto carregam.
+  const [assignedRequests, setAssignedRequests] = useState<InspectionRequest[] | null>(null);
+  const [assignedError, setAssignedError] = useState(false);
+  const [assignedReloads, setAssignedReloads] = useState(0);
   const [failed, setFailed] = useState(seedFailedInspections);
   const [documents, setDocuments] = useState<Record<string, File>>({});
   const [message, setMessage] = useState('');
@@ -161,6 +168,15 @@ function useModel(initialRole: Role) {
       cancelled = true;
     };
   }, [route.role, route.page, pendingReloads]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a página e assignedReloads são gatilhos, para voltar a pedir os pedidos ao mudar de página ou ao tentar de novo
+  useEffect(() => {
+    // Só a empresa de inspeção tem pedidos atribuídos.
+    if (route.role !== 'inspecao') return;
+
+    setAssignedError(false);
+
+    return loadAssignedRequests(route.role, setAssignedRequests, () => setAssignedError(true));
+  }, [route.role, route.page, assignedReloads]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a página e permitsReloads são gatilhos, para voltar a pedir os alvarás ao mudar de página ou ao tentar de novo
   useEffect(() => {
@@ -298,6 +314,9 @@ function useModel(initialRole: Role) {
     reloadPermits: () => setPermitsReloads((n) => n + 1),
     alerted,
     setAlerted,
+    assignedRequests,
+    assignedError,
+    reloadAssignedRequests: () => setAssignedReloads((n) => n + 1),
     urbanNotices,
     setUrbanNotices,
     failed,

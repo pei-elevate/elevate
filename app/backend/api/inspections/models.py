@@ -2,10 +2,10 @@ from datetime import date, datetime
 from enum import StrEnum
 
 from sqlalchemy import ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.database import Base, pg_enum
-from api.elevators.models import EquipmentType
+from api.elevators.models import Elevator, EquipmentType
 
 
 class RequestType(StrEnum):
@@ -62,6 +62,14 @@ class InspectionRequest(Base):
 
     submitted_at: Mapped[datetime]  # "Registado em" in MyDoc
     scheduled_at: Mapped[datetime | None]  # Date and time of the inspection
+
+    elevator: Mapped[Elevator] = relationship()
+    # The result, once the company submits it. inspections has two keys to this table
+    # (request_id and, through original_inspection_id, the other way), so the one to
+    # follow is named.
+    inspection: Mapped[Inspection | None] = relationship(
+        foreign_keys="Inspection.request_id", viewonly=True
+    )
 
 
 class Inspection(Base):
