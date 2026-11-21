@@ -42,6 +42,29 @@ export function listAssignedRequests(role: Role) {
   return api<ApiAssignedRequest[]>('/inspections/assigned', role);
 }
 
+/**
+ * Pede os pedidos atribuídos e entrega-os já no formato da tabela, ou avisa do erro.
+ * Devolve uma função que cancela: uma resposta que chegue depois já não é entregue.
+ */
+export function loadAssignedRequests(
+  role: Role,
+  onLoad: (items: Request[]) => void,
+  onError: () => void,
+) {
+  let cancelled = false;
+  listAssignedRequests(role)
+    .then((items) => {
+      if (!cancelled) onLoad(items.map(toRequest));
+    })
+    .catch(() => {
+      if (!cancelled) onError();
+    });
+
+  return () => {
+    cancelled = true;
+  };
+}
+
 /** Converte para o formato que a tabela de pedidos já usa, com os textos em português. */
 export function toRequest(r: ApiAssignedRequest): Request {
   return {

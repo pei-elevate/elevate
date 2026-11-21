@@ -15,7 +15,7 @@ import { listPendingRegistrations } from '@/features/elevators/api';
 import type { ApiRegistration } from '@/features/elevators/api';
 import type { ElevatorFilters } from '@/features/elevators/types';
 import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
-import { listAssignedRequests, toRequest } from '@/features/inspections/api';
+import { loadAssignedRequests } from '@/features/inspections/api';
 import type { Request as InspectionRequest } from '@/features/inspections/types';
 import {
   failedInspections as seedFailedInspections,
@@ -164,19 +164,9 @@ function useModel(initialRole: Role) {
     // Só a empresa de inspeção tem pedidos atribuídos.
     if (route.role !== 'inspecao') return;
 
-    let cancelled = false;
     setAssignedError(false);
-    listAssignedRequests(route.role)
-      .then((items) => {
-        if (!cancelled) setAssignedRequests(items.map(toRequest));
-      })
-      .catch(() => {
-        if (!cancelled) setAssignedError(true);
-      });
 
-    return () => {
-      cancelled = true;
-    };
+    return loadAssignedRequests(route.role, setAssignedRequests, () => setAssignedError(true));
   }, [route.role, route.page, assignedReloads]);
 
   function go(page: string, id = '', role = route.role, from: Origin | null = null) {

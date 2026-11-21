@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, test, vi } from 'vitest';
-import { listAssignedRequests, toRequest } from '@/features/inspections/api';
+import { listAssignedRequests, loadAssignedRequests, toRequest } from '@/features/inspections/api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -89,4 +89,51 @@ test('um elevador ainda sem referência interna', () => {
   );
 
   assert.equal(request.elevator, '');
+});
+
+test('a carga entrega os pedidos já convertidos', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(JSON.stringify([apiRequest()]), { status: 200 })),
+  );
+  const onLoad = vi.fn();
+  const onError = vi.fn();
+
+  loadAssignedRequests('inspecao', onLoad, onError);
+
+  await vi.waitFor(() => assert.equal(onLoad.mock.calls.length, 1));
+  assert.equal(onLoad.mock.calls[0][0][0].status, 'Agendado');
+  assert.equal(onError.mock.calls.length, 0);
+});
+
+test('a carga avisa quando a API falha', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('{}', { status: 500 })),
+  );
+  const onLoad = vi.fn();
+  const onError = vi.fn();
+
+  loadAssignedRequests('inspecao', onLoad, onError);
+
+  await vi.waitFor(() => assert.equal(onError.mock.calls.length, 1));
+  assert.equal(onLoad.mock.calls.length, 0);
+});
+
+test('uma carga cancelada já não entrega nada', async () => {
+  let respond;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => new Promise((resolve) => (respond = resolve))),
+  );
+  const onLoad = vi.fn();
+  const onError = vi.fn();
+
+  const cancel = loadAssignedRequests('inspecao', onLoad, onError);
+  cancel();
+  respond(new Response(JSON.stringify([apiRequest()]), { status: 200 }));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(onLoad.mock.calls.length, 0);
+  assert.equal(onError.mock.calls.length, 0);
 });
