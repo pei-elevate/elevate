@@ -279,7 +279,25 @@ def seed(db: Session) -> None:
         RequestStatus.COMPLETED,
         datetime(2025, 3, 3, 10, 0),
     )
-    db.add_all([failed_request, approved_request])
+    # Past inspections behind the certificate status of the mocks: 0079 due soon
+    # (inspectionHistory in the mocks) and 0154 overdue (its process number is made up).
+    due_soon_request = request(
+        "2024/0611",
+        "01.05.0079",
+        datetime(2024, 10, 2),
+        RequestType.PERIODIC,
+        RequestStatus.COMPLETED,
+        datetime(2024, 12, 14, 10, 0),
+    )
+    overdue_request = request(
+        "2024/0388",
+        "01.05.0154",
+        datetime(2024, 4, 15),
+        RequestType.PERIODIC,
+        RequestStatus.COMPLETED,
+        datetime(2024, 6, 20, 10, 0),
+    )
+    db.add_all([failed_request, approved_request, due_soon_request, overdue_request])
     db.flush()
 
     failed = Inspection(
@@ -298,7 +316,26 @@ def seed(db: Session) -> None:
         valid_until=date(2027, 3, 3),
         report_file="relatorio-2025-0118.pdf",
     )
-    db.add_all([failed, approved])
+    db.add_all(
+        [
+            failed,
+            approved,
+            Inspection(
+                request_id=due_soon_request.id,
+                performed_date=date(2024, 12, 14),
+                result=InspectionResult.APPROVED,
+                valid_until=date(2026, 12, 12),
+                report_file="relatorio-2024-0611.pdf",
+            ),
+            Inspection(
+                request_id=overdue_request.id,
+                performed_date=date(2024, 6, 20),
+                result=InspectionResult.APPROVED,
+                valid_until=date(2026, 6, 20),
+                report_file="relatorio-2024-0388.pdf",
+            ),
+        ]
+    )
     db.flush()
 
     # Open requests (requests in inspections/mocks.ts)
