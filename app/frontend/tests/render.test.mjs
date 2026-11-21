@@ -15,10 +15,10 @@ const root = new URL('../', import.meta.url);
 test('ecrãs e rotas do protótipo', async () => {
   const screens = [
     ['proprietario', '/painel', 'Painel geral'],
-    ['proprietario', '/detalhes/01.05.0079', 'Elevador 01.05.0079'],
+    ['proprietario', '/detalhes/1', 'A carregar elevador…'],
     ['proprietario', '/avisos', 'Página não encontrada'],
     ['manutencao', '/elevadores', 'Painel geral'],
-    ['manutencao', '/detalhes/01.05.0079', 'Elevador 01.05.0079'],
+    ['manutencao', '/detalhes/1', 'A carregar elevador…'],
     ['manutencao', '/inspecoes', 'Inspeções'],
     ['manutencao', '/registar', 'Registar elevador'],
     ['manutencao', '/reprovadas', 'Inspeções reprovadas'],
@@ -27,7 +27,7 @@ test('ecrãs e rotas do protótipo', async () => {
     ['urbanismo', '/novo-aviso', 'Registar novo alvará'],
     ['gestor', '/painel', 'Painel geral'],
     ['gestor', '/cadastro', 'Elevadores registados'],
-    ['gestor', '/historico/01.05.0079', 'Elevador 01.05.0079'],
+    ['gestor', '/historico/1', 'A carregar elevador…'],
     ['gestor', '/nao-registados', 'Elevadores não registados'],
     ['gestor', '/validacoes', 'Validar registo'],
     ['gestor', '/pedidos', 'Pedidos de inspeção'],
@@ -60,12 +60,6 @@ test('ecrãs e rotas do protótipo', async () => {
       `${route} deve estar em português`,
     );
     assert.match(html, /Navegação principal/, route);
-    if (route === 'gestor/historico/01.05.0079') {
-      for (const text of ['Enviar aviso de inspeção', 'Inspeções', 'Avisos', 'Reclamações'])
-        assert.match(html, new RegExp(`>${text}<`), route);
-      assert.match(html, /Descarregar relatório/, route);
-      assert.doesNotMatch(html, /Cronologia|Histórico de avisos|Histórico de reclamações/, route);
-    }
     if (route === 'manutencao/reclamacoes') {
       assert.doesNotMatch(html, /Todas as reclamações/);
       assert.match(html, /Registar nova reclamação/);

@@ -1,9 +1,21 @@
-import { useState } from 'react';
-import { elevatorHistory } from '@/features/elevators/rules';
+import { useEffect, useState } from 'react';
+import {
+  getElevator,
+  listElevatorInspections,
+  listElevatorNotices,
+  load,
+  toElevator,
+  toInspectionRow,
+  toNotice,
+} from '@/features/elevators/api';
+import { elevatorDataModal } from '@/features/elevators/elevatorDataModal';
 import type { Elevator } from '@/features/elevators/types';
 import { noticeModal } from '@/features/notices/noticeModal';
 import { sendManualNotice } from '@/features/notices/rules';
+import { ApiError } from '@/shared/api/client';
+import type { Role } from '@/shared/auth/roles';
 import { formatDate } from '@/shared/lib/dates';
+import { Banner } from '@/shared/ui/Banner';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { DataTable } from '@/shared/ui/DataTable';
@@ -15,32 +27,110 @@ import { Summary } from '@/shared/ui/Summary';
 import { Tabs } from '@/shared/ui/Tabs';
 import { usePrototype } from '@/app/state';
 
+type LoadError = 'not_found' | 'failed' | null;
+
+/**
+ * Pede um recurso do elevador `key` e guarda-o, com o erro (404 → «não encontrado»).
+ * Com `key` null não faz pedido. `fetcher` tem de ser estável (uma função do módulo).
+ */
+function useElevatorResource<T>(
+  fetcher: (role: Role, id: number) => Promise<T>,
+  role: Role,
+  key: number | null,
+) {
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<LoadError>(null);
+  const [reloads, setReloads] = useState(0);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reloads é um gatilho, para tentar de novo
+  useEffect(() => {
+    if (key === null) return;
+
+    setData(null);
+    setError(null);
+
+    return load(
+      () => fetcher(role, key),
+      (value) => setData(() => value),
+      (e) => setError(e instanceof ApiError && e.status === 404 ? 'not_found' : 'failed'),
+    );
+  }, [fetcher, role, key, reloads]);
+
+  return { data, error, retry: () => setReloads((n) => n + 1) };
+}
+
+// Linha da tabela enquanto o histórico carrega ou quando falhou.
+function HistoryState({
+  colSpan,
+  error,
+  onRetry,
+}: {
+  colSpan: number;
+  error: LoadError;
+  onRetry: () => void;
+}) {
+  return (
+    <tr>
+      <td colSpan={colSpan}>
+        {error ? (
+          <Banner tone="warning" action={<Button onClick={onRetry}>Tentar de novo</Button>}>
+            Não foi possível carregar o histórico.
+          </Banner>
+        ) : (
+          <p role="status">A carregar…</p>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 export function ElevatorDetailsPage() {
   const s = usePrototype();
-  const e = s.elevators.find((e) => e.id === s.route.id);
+  const role = s.route.role;
+  // O URL leva o id numérico da API; outro valor nem chega a ser pedido.
+  const key = /^\d+$/.test(s.route.id) ? Number(s.route.id) : null;
+  const manager = role === 'gestor',
+    owner = role === 'proprietario';
+  const detail = useElevatorResource(getElevator, role, key);
+  const inspections = useElevatorResource(listElevatorInspections, role, key);
+  // A vista da EMA não tem o separador de avisos.
+  const apiNotices = useElevatorResource(listElevatorNotices, role, manager || owner ? key : null);
   const [tab, setTab] = useState('Inspeções');
+  const back = () => s.go(manager ? 'cadastro' : 'elevadores');
 
-  if (!e)
+  if (key === null || detail.error === 'not_found')
     return (
       <>
         <Heading title="Elevador não encontrado" />
-        <Button onClick={() => s.go(s.route.role === 'gestor' ? 'cadastro' : 'elevadores')}>
-          Voltar aos elevadores
-        </Button>
+        <Button onClick={back}>Voltar aos elevadores</Button>
+      </>
+    );
+  if (!detail.data)
+    return (
+      <>
+        <Heading title="A carregar elevador…" />
+        {detail.error && (
+          <Banner tone="warning" action={<Button onClick={detail.retry}>Tentar de novo</Button>}>
+            Não foi possível carregar o elevador.
+          </Banner>
+        )}
       </>
     );
 
-  const manager = s.route.role === 'gestor',
-    owner = s.route.role === 'proprietario';
-  const history = elevatorHistory(e.id, s.requests);
-  const notices = s.elevatorNotices.filter((n) => n.elevator === e.id);
+  const data = detail.data;
+  const e = toElevator(data);
+  const history = inspections.data?.map(toInspectionRow) ?? [];
+  const notices = [
+    ...s.simulatedNotices.filter((n) => n.elevator === e.id),
+    ...(apiNotices.data?.map((n) => toNotice(n, e.id)) ?? []),
+  ];
 
   function sendNotice(elevator: Elevator) {
     s.confirm(
       'Enviar aviso de inspeção',
       `Enviar um aviso de necessidade de inspeção do ${elevator.id} a ${elevator.owner} (proprietário) e a ${elevator.company} (empresa de manutenção)? Neste protótipo não será enviado correio eletrónico.`,
       () => {
-        s.setElevatorNotices((items) => sendManualNotice(items, elevator));
+        s.setSimulatedNotices((items) => sendManualNotice(items, elevator));
         setTab('Avisos');
         s.notify('Aviso de necessidade de inspeção enviado.');
       },
@@ -67,7 +157,7 @@ export function ElevatorDetailsPage() {
           </td>
           <td>{formatDate(h.date)}</td>
           <td>{h.scope}</td>
-          <td>{e.inspector}</td>
+          <td>{h.inspector}</td>
           <td>{formatDate(h.performed)}</td>
           <td>
             <Badge>{h.result}</Badge>
@@ -84,12 +174,16 @@ export function ElevatorDetailsPage() {
           </td>
         </tr>
       ))}
-      {!history.length && (
-        <tr>
-          <td colSpan={7}>
-            <Empty>Ainda não há inspeções concluídas para este elevador.</Empty>
-          </td>
-        </tr>
+      {!inspections.data ? (
+        <HistoryState colSpan={7} error={inspections.error} onRetry={inspections.retry} />
+      ) : (
+        !history.length && (
+          <tr>
+            <td colSpan={7}>
+              <Empty>Ainda não há inspeções concluídas para este elevador.</Empty>
+            </td>
+          </tr>
+        )
       )}
     </DataTable>
   );
@@ -113,12 +207,16 @@ export function ElevatorDetailsPage() {
           </td>
         </tr>
       ))}
-      {!notices.length && (
-        <tr>
-          <td colSpan={5}>
-            <Empty>Sem avisos enviados.</Empty>
-          </td>
-        </tr>
+      {!apiNotices.data ? (
+        <HistoryState colSpan={5} error={apiNotices.error} onRetry={apiNotices.retry} />
+      ) : (
+        !notices.length && (
+          <tr>
+            <td colSpan={5}>
+              <Empty>Sem avisos enviados.</Empty>
+            </td>
+          </tr>
+        )
       )}
     </DataTable>
   );
@@ -153,7 +251,7 @@ export function ElevatorDetailsPage() {
         {s.origin ? (
           <button onClick={() => s.go(s.origin!.page)}>{s.origin.label}</button>
         ) : (
-          <button onClick={() => s.go(manager ? 'cadastro' : 'elevadores')}>
+          <button onClick={back}>
             {manager
               ? 'Elevadores registados'
               : s.route.role === 'manutencao'
@@ -179,16 +277,16 @@ export function ElevatorDetailsPage() {
           )
         }
       />
-      <Panel title={manager || owner ? 'Elevador' : undefined}>
+      <Panel
+        title={manager || owner ? 'Elevador' : undefined}
+        tools={
+          <Button onClick={() => s.setModal(elevatorDataModal(data))}>Ver todos os dados</Button>
+        }
+      >
         <Summary
           items={[
             ['Referência interna', e.id],
-            ['N.º DGE', e.dge],
-            ['Entidade', e.owner],
             ['Morada', e.address],
-            ['Empresa de manutenção (EMA)', e.company],
-            ['Empresa de inspeção', e.inspector],
-            ['Última entrada', `${e.entry} · ${formatDate(e.entryDate)}`],
             ['Válido até', formatDate(e.validUntil)],
           ]}
         />
