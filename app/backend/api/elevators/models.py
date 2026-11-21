@@ -30,6 +30,16 @@ class ElevatorStatus(StrEnum):
     SEALED = "sealed"  # Selado
 
 
+class CertificateStatus(StrEnum):
+    """Calculated from the last inspection; not a database column."""
+
+    VALID = "valid"  # Válida
+    DUE_SOON = "due_soon"  # A vencer
+    OVERDUE = "overdue"  # Em atraso
+    FAILED = "failed"  # Reprovada
+    NOT_INSPECTED = "not_inspected"  # Por inspecionar
+
+
 class ComplaintStatus(StrEnum):
     OPEN = "open"
     RESOLVED = "resolved"
