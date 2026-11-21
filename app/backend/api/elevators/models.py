@@ -30,6 +30,16 @@ class ElevatorStatus(StrEnum):
     SEALED = "sealed"  # Selado
 
 
+class CertificateStatus(StrEnum):
+    """Calculated from the last inspection; not a database column."""
+
+    VALID = "valid"  # Válida
+    DUE_SOON = "due_soon"  # A vencer
+    OVERDUE = "overdue"  # Em atraso
+    FAILED = "failed"  # Reprovada
+    NOT_INSPECTED = "not_inspected"  # Por inspecionar
+
+
 class ComplaintStatus(StrEnum):
     OPEN = "open"
     RESOLVED = "resolved"
@@ -49,6 +59,8 @@ class Elevator(Base):
     # E.g. 01.05.0079. Given when the registration is approved, with the next number of
     # reference_counters. The only official identifier in Aveiro.
     internal_reference: Mapped[str | None] = mapped_column(String, unique=True)
+    # DGE registration number, when known.
+    dge_number: Mapped[str | None] = mapped_column(String)
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("owners.id"))
     maintenance_company_id: Mapped[int] = mapped_column(ForeignKey("maintenance_companies.id"))

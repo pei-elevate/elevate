@@ -18,8 +18,14 @@ export function noticeModal(elevator: Elevator, n: ElevatorNotice) {
       <div className="official-notice">
         <OfficialLetter
           date={n.date}
-          subject={n.type === 'Manual' ? n.subject : 'Prazo da inspeção periódica'}
-          body={n.type === 'Manual' ? manualNoticeBody : expiringNoticeBody(elevator.validUntil)}
+          subject={
+            n.body !== undefined || n.type === 'Manual' ? n.subject : 'Prazo da inspeção periódica'
+          }
+          body={
+            // Os avisos da API trazem o texto enviado; os simulados usam o do modelo.
+            n.body ??
+            (n.type === 'Manual' ? manualNoticeBody : expiringNoticeBody(elevator.validUntil))
+          }
           elevator={elevator}
         />
       </div>

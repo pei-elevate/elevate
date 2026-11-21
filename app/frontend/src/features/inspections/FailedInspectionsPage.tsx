@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { detailPage } from '@/features/elevators/links';
+import { detailId, detailPage } from '@/features/elevators/links';
 import { formatDate, localToday } from '@/shared/lib/dates';
 import { normalize } from '@/shared/lib/text';
 import { Badge } from '@/shared/ui/Badge';
@@ -113,7 +113,7 @@ export function FailedInspectionsPage() {
                   <button
                     className="text-button"
                     aria-label={`Consultar ${e.id}`}
-                    onClick={() => s.go(detailPage(s.route.role), e.id)}
+                    onClick={() => s.go(detailPage(s.route.role), detailId(e.id, s.apiElevators))}
                   >
                     {e.id}
                   </button>

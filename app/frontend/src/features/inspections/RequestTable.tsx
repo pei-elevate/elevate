@@ -1,4 +1,4 @@
-import { detailPage } from '@/features/elevators/links';
+import { canViewElevators, detailId, detailPage } from '@/features/elevators/links';
 import type { Request } from '@/features/inspections/types';
 import { formatDate } from '@/shared/lib/dates';
 import { Badge } from '@/shared/ui/Badge';
@@ -40,12 +40,18 @@ export function RequestTable({
               <small>{formatDate(r.date)}</small>
             </td>
             <td>
-              <button
-                className="text-button"
-                onClick={() => s.go(detailPage(s.route.role), r.elevator)}
-              >
-                {r.elevator}
-              </button>
+              {canViewElevators(s.route.role) ? (
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    s.go(detailPage(s.route.role), detailId(r.elevator, s.apiElevators))
+                  }
+                >
+                  {r.elevator}
+                </button>
+              ) : (
+                <strong>{r.elevator}</strong>
+              )}
               <small>{e?.dge}</small>
             </td>
             <td>
