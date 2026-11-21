@@ -4,6 +4,7 @@ from enum import StrEnum
 from sqlalchemy import ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from api.accounts.models import InspectionCompany
 from api.database import Base, pg_enum
 from api.elevators.models import Elevator, EquipmentType
 
@@ -64,6 +65,7 @@ class InspectionRequest(Base):
     scheduled_at: Mapped[datetime | None]  # Date and time of the inspection
 
     elevator: Mapped[Elevator] = relationship()
+    inspection_company: Mapped[InspectionCompany] = relationship()
     # The result, once the company submits it. inspections has two keys to this table
     # (request_id and, through original_inspection_id, the other way), so the one to
     # follow is named.

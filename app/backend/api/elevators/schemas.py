@@ -6,7 +6,8 @@ from pydantic import BaseModel, ConfigDict, StringConstraints
 from api.accounts.models import OwnerType
 from api.elevators.models import CertificateStatus, EquipmentType, RegistrationStatus
 from api.elevators.views import ElevatorView
-from api.inspections.models import InspectionResult, RequestType
+from api.inspections.models import InspectionRequest, InspectionResult, RequestType
+from api.notices.models import NoticeType
 
 
 class OrmSchema(BaseModel):
@@ -158,3 +159,43 @@ class ElevatorOut(ElevatorSummaryOut):
                 "permit": e.permit if include_permit else None,
             }
         )
+
+
+class ElevatorInspectionOut(BaseModel):
+    """A completed inspection of the elevator, with the request it answered."""
+
+    process_number: str
+    submitted_at: datetime
+    type: RequestType
+    # The company of the request, not necessarily the one in force today.
+    inspection_company: CompanyName
+    performed_date: date
+    result: InspectionResult
+    valid_until: date | None
+    report_file: str
+
+    @classmethod
+    def from_request(cls, r: InspectionRequest) -> Self:
+        inspection = r.inspection
+        assert inspection is not None  # only requests with an inspection are listed
+        return cls.model_validate(
+            {
+                "process_number": r.process_number,
+                "submitted_at": r.submitted_at,
+                "type": r.type,
+                "inspection_company": r.inspection_company,
+                "performed_date": inspection.performed_date,
+                "result": inspection.result,
+                "valid_until": inspection.valid_until,
+                "report_file": inspection.report_file,
+            }
+        )
+
+
+class ElevatorNoticeOut(OrmSchema):
+    id: int
+    type: NoticeType
+    subject: str
+    body: str
+    recipients: str
+    created_at: datetime | None

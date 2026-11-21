@@ -13,6 +13,7 @@ from api.elevators import repository
 from api.elevators.certificate import certificate_status
 from api.elevators.models import CertificateStatus, Elevator, RegistrationStatus
 from api.inspections.models import Inspection, InspectionRequest
+from api.notices.models import Notice
 
 
 class ElevatorNotFound(Exception):
@@ -67,6 +68,17 @@ def _views(db: Session, elevators: list[Elevator], today: date) -> list[Elevator
 
 def get_elevator(db: Session, user: User, elevator_id: int, today: date) -> ElevatorView:
     return _views(db, [_visible_elevator(db, user, elevator_id)], today)[0]
+
+
+def list_inspections(db: Session, user: User, elevator_id: int) -> list[InspectionRequest]:
+    """The elevator's completed inspections, with the request each one answered."""
+    _visible_elevator(db, user, elevator_id)
+    return repository.list_inspections(db, elevator_id)
+
+
+def list_notices(db: Session, user: User, elevator_id: int) -> list[Notice]:
+    _visible_elevator(db, user, elevator_id)
+    return repository.list_notices(db, elevator_id)
 
 
 def _visible_elevator(db: Session, user: User, elevator_id: int) -> Elevator:

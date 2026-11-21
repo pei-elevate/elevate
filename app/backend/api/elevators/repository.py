@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from api.accounts.models import InspectionCompany
 from api.elevators.models import Elevator, ReferenceCounter, RegistrationStatus
 from api.inspections.models import Inspection, InspectionRequest
+from api.notices.models import Notice
 from api.permits.models import Permit
 
 
@@ -123,3 +124,27 @@ def get_elevator(db: Session, elevator_id: int) -> Elevator | None:
         .where(Elevator.id == elevator_id)
     )
     return db.scalar(query)
+
+
+def list_inspections(db: Session, elevator_id: int) -> list[InspectionRequest]:
+    """The elevator's requests that already have an inspection, most recent first."""
+    query = (
+        select(InspectionRequest)
+        .join(Inspection, Inspection.request_id == InspectionRequest.id)
+        .options(
+            joinedload(InspectionRequest.inspection),
+            joinedload(InspectionRequest.inspection_company),
+        )
+        .where(InspectionRequest.elevator_id == elevator_id)
+        .order_by(Inspection.performed_date.desc(), Inspection.id.desc())
+    )
+    return list(db.scalars(query))
+
+
+def list_notices(db: Session, elevator_id: int) -> list[Notice]:
+    query = (
+        select(Notice)
+        .where(Notice.elevator_id == elevator_id)
+        .order_by(Notice.created_at.desc(), Notice.id.desc())
+    )
+    return list(db.scalars(query))

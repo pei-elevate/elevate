@@ -425,3 +425,144 @@ def test_detail_unknown_is_404(client: TestClient, world: World):
 def test_detail_other_roles_are_forbidden(client: TestClient, world: World):
     url = detail_url(world, "01.05.0079")
     assert client.get(url, headers={"X-User-Id": "urban"}).status_code == 403
+
+
+# Histories
+
+
+def test_inspections_only_completed_newest_first(
+    client: TestClient,
+    db: Session,
+    world: World,
+    in_force: InspectionCompany,
+    expired: InspectionCompany,
+):
+    elevator = world.elevators["01.05.0079"]
+    make_inspection(
+        db,
+        elevator,
+        "2023/0050",
+        expired,
+        date(2023, 3, 3),
+        InspectionResult.FAILED,
+        submitted=datetime(2023, 1, 10),
+    )
+    make_inspection(
+        db,
+        elevator,
+        "2025/0118",
+        in_force,
+        date(2025, 3, 3),
+        InspectionResult.APPROVED,
+        date(2027, 3, 3),
+        submitted=datetime(2025, 1, 14),
+    )
+    make_request(
+        db,
+        elevator,
+        "2026/0341",
+        in_force,
+        datetime(2026, 10, 2),
+        RequestStatus.AWAITING_SCHEDULING,
+    )
+    # Another elevator's inspection never shows up.
+    make_inspection(
+        db,
+        world.elevators["01.05.0154"],
+        "2025/0200",
+        in_force,
+        date(2025, 6, 1),
+        InspectionResult.APPROVED,
+        date(2027, 6, 1),
+    )
+
+    response = client.get(f"{detail_url(world, '01.05.0079')}/inspections", headers=OWNER_A)
+    assert response.status_code == 200, response.text
+    assert response.json() == [
+        {
+            "process_number": "2025/0118",
+            "submitted_at": "2025-01-14T00:00:00",
+            "type": "periodic",
+            "inspection_company": {"name": "Inspeave, Lda."},
+            "performed_date": "2025-03-03",
+            "result": "approved",
+            "valid_until": "2027-03-03",
+            "report_file": "relatorio-2025-0118.pdf",
+        },
+        {
+            "process_number": "2023/0050",
+            "submitted_at": "2023-01-10T00:00:00",
+            "type": "periodic",
+            "inspection_company": {"name": "Antiga Inspeção, S.A."},
+            "performed_date": "2023-03-03",
+            "result": "failed",
+            "valid_until": None,
+            "report_file": "relatorio-2023-0050.pdf",
+        },
+    ]
+
+
+def test_notices_of_the_elevator_newest_first(
+    client: TestClient, db: Session, world: World, permit
+):
+    from api.notices.models import Notice, NoticeType
+
+    elevator = world.elevators["01.05.0079"]
+
+    def notice(type_, subject, created, elevator_id=elevator.id, permit_id=None):
+        return Notice(
+            type=type_,
+            elevator_id=elevator_id,
+            permit_id=permit_id,
+            subject=subject,
+            body=f"Corpo de {subject}",
+            recipients="Condomínio Edifício Ria <ria@ex.pt>",
+            created_at=created,
+        )
+
+    db.add_all(
+        [
+            notice(NoticeType.INSPECTION_DUE, "Prazo", datetime(2026, 10, 13, 9, 0)),
+            notice(NoticeType.INSPECTION_REQUIRED, "Manual", datetime(2026, 11, 2, 11, 30)),
+            notice(
+                NoticeType.INSPECTION_DUE,
+                "Outro elevador",
+                datetime(2026, 11, 5),
+                world.elevators["01.05.0154"].id,
+            ),
+            notice(
+                NoticeType.MISSING_REGISTRATION,
+                "Sem registo",
+                datetime(2026, 11, 6),
+                None,
+                permit.id,
+            ),
+        ]
+    )
+    db.flush()
+
+    response = client.get(f"{detail_url(world, '01.05.0079')}/notices", headers=OWNER_A)
+    assert response.status_code == 200, response.text
+    notices = response.json()
+    assert [(n["type"], n["subject"]) for n in notices] == [
+        ("inspection_required", "Manual"),
+        ("inspection_due", "Prazo"),
+    ]
+    assert notices[0]["body"] == "Corpo de Manual"
+    assert notices[0]["recipients"] == "Condomínio Edifício Ria <ria@ex.pt>"
+    assert notices[0]["created_at"] == "2026-11-02T11:30:00"
+    assert isinstance(notices[0]["id"], int)
+
+
+@pytest.mark.parametrize("history", ["inspections", "notices"])
+def test_histories_of_other_owner_are_404(client: TestClient, world: World, history):
+    response = client.get(f"{detail_url(world, '01.05.0079')}/{history}", headers=OWNER_B)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Elevator not found"}
+
+
+@pytest.mark.parametrize("history", ["inspections", "notices"])
+def test_histories_of_pending_are_404(client: TestClient, world: World, history):
+    response = client.get(f"{detail_url(world, 'pending')}/{history}", headers=MANAGER)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Elevator not found"}
