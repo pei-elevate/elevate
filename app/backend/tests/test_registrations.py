@@ -1,4 +1,4 @@
-"""Review of elevator registrations by the municipal manager (SCRUM-53)."""
+"""Review of elevator registrations by the municipal manager (ELEV-53)."""
 
 from datetime import date
 
