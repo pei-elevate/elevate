@@ -14,7 +14,7 @@ export function sendManualNotice(
       date: today,
       type: 'Manual',
       subject: 'Necessidade de inspeção',
-      recipients: `${elevator.owner} e ${elevator.company}`,
+      recipients: `${elevator.owner}; ${elevator.company}`,
     },
     ...notices,
   ];

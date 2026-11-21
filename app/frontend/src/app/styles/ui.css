@@ -294,6 +294,17 @@ td .regular {
   font-weight: 400;
 }
 
+/* Destinatários de um aviso: um nome por linha. */
+td .recipients {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+td .recipients li + li {
+  margin-top: 4px;
+}
+
 td .text-button,
 td:first-child strong {
   white-space: nowrap;

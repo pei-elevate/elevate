@@ -11,6 +11,7 @@ import {
 import { elevatorDataModal } from '@/features/elevators/elevatorDataModal';
 import type { Elevator } from '@/features/elevators/types';
 import { noticeModal } from '@/features/notices/noticeModal';
+import { Recipients } from '@/features/notices/Recipients';
 import { sendManualNotice } from '@/features/notices/rules';
 import { ApiError } from '@/shared/api/client';
 import type { Role } from '@/shared/auth/roles';
@@ -195,7 +196,9 @@ export function ElevatorDetailsPage() {
           <td>{formatDate(n.date)}</td>
           <td>{n.type}</td>
           <td>{n.subject}</td>
-          <td>{n.recipients}</td>
+          <td>
+            <Recipients value={n.recipients} />
+          </td>
           <td>
             <button
               className="text-button"
