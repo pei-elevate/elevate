@@ -34,3 +34,11 @@ def list_permits(db: Session) -> list[Row]:
         .order_by(Permit.permit_date.desc(), Permit.id.desc())
     )
     return list(db.execute(query))
+
+
+def get_owner_by_nif(db: Session, nif: str) -> Owner | None:
+    return db.scalar(select(Owner).where(Owner.nif == nif))
+
+
+def permit_number_exists(db: Session, number: str) -> bool:
+    return db.scalar(select(Permit.id).where(Permit.permit_number == number)) is not None

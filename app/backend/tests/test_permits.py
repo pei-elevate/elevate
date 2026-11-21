@@ -1,7 +1,8 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from api.accounts.models import MaintenanceCompany, Owner, User, UserRole
@@ -165,3 +166,124 @@ def test_a_permit_without_alerts_or_elevators(client: TestClient, db: Session):
     [p] = client.get("/api/permits", headers=manager).json()
 
     assert p["last_alert_at"] is None and p["status"] == "missing" and p["missing"] == 1
+
+
+BODY = {
+    "permit_number": "200/2026",
+    "permit_date": "2026-11-02",
+    "address": "Rua Nova 1",
+    "postal_code": "3800-100",
+    "parish": "Esgueira",
+    "num_elevators": 2,
+    "owner_name": "Condomínio Rua Nova",
+    "owner_nif": "900000099",
+    "owner_email": "rua.nova@ex.pt",
+    "owner_phone": None,
+}
+
+
+def test_creates_a_permit_waiting_for_registration(client: TestClient, db: Session):
+    urban = add_user(db, UserRole.URBAN_PLANNING)
+    manager = add_user(db, UserRole.MUNICIPAL_MANAGER)
+
+    response = client.post("/api/permits", headers=urban, json=BODY)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert (body["status"], body["missing"], body["registered"], body["pending"]) == (
+        "missing",
+        2,
+        0,
+        0,
+    )
+    assert body["owner_name"] == "Condomínio Rua Nova"
+    assert body["last_alert_at"] is None
+    permit = db.scalar(select(Permit).where(Permit.permit_number == "200/2026"))
+    creator = db.query(User).filter_by(role=UserRole.URBAN_PLANNING).one()
+    assert permit.created_by == creator.id and permit.maintenance_company_id is None
+    owner = db.get(Owner, permit.owner_id)
+    assert (owner.type, owner.email, owner.phone) == (None, "rua.nova@ex.pt", None)
+    listed = client.get("/api/permits", headers=manager).json()
+    assert [p["permit_number"] for p in listed] == ["200/2026"]
+
+
+def test_reuses_the_owner_with_the_same_nif_without_changing_it(client: TestClient, db: Session):
+    urban = add_user(db, UserRole.URBAN_PLANNING)
+    existing = Owner(name="Nome antigo", nif="900000099", email="antigo@ex.pt")
+    db.add(existing)
+    db.flush()
+
+    response = client.post(
+        "/api/permits",
+        headers=urban,
+        json=BODY | {"owner_name": "Outro", "owner_email": "x@ex.pt", "owner_phone": "912345678"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["owner_name"] == "Nome antigo"
+    assert db.scalar(select(func.count()).select_from(Owner).where(Owner.nif == "900000099")) == 1
+    db.refresh(existing)
+    assert (existing.name, existing.email, existing.phone) == ("Nome antigo", "antigo@ex.pt", None)
+    permit = db.scalar(select(Permit).where(Permit.permit_number == "200/2026"))
+    assert permit.owner_id == existing.id
+
+
+def test_a_repeated_number_is_a_conflict_and_creates_nothing(client: TestClient, db: Session):
+    urban = add_user(db, UserRole.URBAN_PLANNING)
+    client.post("/api/permits", headers=urban, json=BODY)
+
+    response = client.post(
+        "/api/permits",
+        headers=urban,
+        json=BODY | {"permit_number": " 200/2026 ", "owner_nif": "900000098"},
+    )
+
+    assert response.status_code == 409
+    assert db.scalar(select(Owner).where(Owner.nif == "900000098")) is None
+    count = select(func.count()).select_from(Permit).where(Permit.permit_number == "200/2026")
+    assert db.scalar(count) == 1
+
+
+def test_strips_whitespace(client: TestClient, db: Session):
+    urban = add_user(db, UserRole.URBAN_PLANNING)
+
+    response = client.post(
+        "/api/permits",
+        headers=urban,
+        json=BODY
+        | {"permit_number": " 200/2026 ", "address": "  Rua Nova 1  ", "owner_phone": "  "},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["address"] == "Rua Nova 1"
+    assert response.json()["permit_number"] == "200/2026"
+    assert db.scalar(select(Owner.phone).where(Owner.nif == "900000099")) is None
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"owner_nif": "12345678"},
+        {"postal_code": "3800100"},
+        {"owner_email": "a@b"},
+        {"permit_date": (date.today() + timedelta(days=1)).isoformat()},
+        {"num_elevators": 0},
+        {"address": "   "},
+        {"permit_number": ""},
+        {"parish": ""},
+        {"owner_name": " "},
+    ],
+)
+def test_invalid_data_is_rejected(client: TestClient, db: Session, change: dict):
+    urban = add_user(db, UserRole.URBAN_PLANNING)
+
+    assert client.post("/api/permits", headers=urban, json=BODY | change).status_code == 422
+
+
+@pytest.mark.parametrize("role", [r for r in UserRole if r != UserRole.URBAN_PLANNING])
+def test_only_urban_planning_creates(client: TestClient, db: Session, role: UserRole):
+    assert client.post("/api/permits", headers=add_user(db, role), json=BODY).status_code == 403
+
+
+def test_creating_requires_a_user(client: TestClient):
+    assert client.post("/api/permits", json=BODY).status_code == 401
