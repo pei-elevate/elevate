@@ -139,3 +139,10 @@ test('a ficha abre-se pelo id da API a partir da referência', async () => {
   assert.equal(detailId('01.05.0999', items), '01.05.0999');
   assert.equal(detailId('01.05.0079', null), '01.05.0079');
 });
+
+test('a empresa de inspeção vê a referência sem ligação para a ficha', () => {
+  // Este perfil não consulta elevadores (a API dá 403): a ligação acabava em «não encontrado».
+  const html = render('inspecao', '/agendar');
+  assert.match(html, /01\.05\.0203/);
+  assert.doesNotMatch(html, /<button[^>]*>01\.05\.0203</);
+});

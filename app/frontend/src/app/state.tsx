@@ -63,6 +63,13 @@ export function readRoute(pathname: string, state: unknown, fallback: Role) {
   return { role, page: p || navigation[role][0][0], id: decoded };
 }
 
+type SavedElevators = { role: Role; items: Elevator[] };
+
+/** A lista da API, só se pertencer ao perfil atual; senão, null (ainda a carregar). */
+export function elevatorsFor(saved: SavedElevators | null, role: Role) {
+  return saved?.role === role ? saved.items : null;
+}
+
 function useModel(initialRole: Role) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -99,7 +106,9 @@ function useModel(initialRole: Role) {
   const [assignedReloads, setAssignedReloads] = useState(0);
   // Elevadores do perfil, vindos da API: a lista e o painel mostram os mesmos. null enquanto
   // carregam. s.elevators (os mocks) continua para os ecrãs que ainda não usam a API.
-  const [apiElevators, setApiElevators] = useState<Elevator[] | null>(null);
+  // Guardada com o perfil a que pertence, para não mostrar a de outro ao trocar de perfil.
+  const [savedElevators, setSavedElevators] = useState<SavedElevators | null>(null);
+  const apiElevators = elevatorsFor(savedElevators, route.role);
   const [apiElevatorsError, setApiElevatorsError] = useState(false);
   const [apiElevatorsReloads, setApiElevatorsReloads] = useState(0);
   // Avisos do botão «Enviar aviso de inspeção», ainda simulados: ficam até recarregar.
@@ -201,7 +210,7 @@ function useModel(initialRole: Role) {
 
     return load(
       () => listElevators(role),
-      (items) => setApiElevators(items.map(toElevator)),
+      (items) => setSavedElevators({ role, items: items.map(toElevator) }),
       () => setApiElevatorsError(true),
     );
   }, [route.role, route.page, apiElevatorsReloads]);

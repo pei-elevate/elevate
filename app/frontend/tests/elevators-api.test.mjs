@@ -184,3 +184,11 @@ test('um erro chega ao onError, com o erro', async () => {
 
   assert.deepEqual(failed.mock.calls, [[error]]);
 });
+
+test('a lista de outro perfil não é mostrada enquanto a do novo carrega', async () => {
+  const { elevatorsFor } = await import('@/app/state');
+  const items = [toElevator(apiSummary())];
+  assert.equal(elevatorsFor({ role: 'gestor', items }, 'proprietario'), null);
+  assert.equal(elevatorsFor({ role: 'gestor', items }, 'gestor'), items);
+  assert.equal(elevatorsFor(null, 'gestor'), null);
+});
