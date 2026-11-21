@@ -1,10 +1,12 @@
 from datetime import date, datetime
-from typing import Annotated
+from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, StringConstraints
 
 from api.accounts.models import OwnerType
-from api.elevators.models import EquipmentType, RegistrationStatus
+from api.elevators.models import CertificateStatus, EquipmentType, RegistrationStatus
+from api.elevators.views import ElevatorView
+from api.inspections.models import RequestType
 
 
 class OrmSchema(BaseModel):
@@ -64,3 +66,56 @@ class ApproveRegistration(BaseModel):
 
 class RejectRegistration(BaseModel):
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class LatestRequestOut(OrmSchema):
+    process_number: str
+    submitted_at: datetime
+    type: RequestType
+
+
+class CompanyName(OrmSchema):
+    name: str
+
+
+class ElevatorSummaryOut(BaseModel):
+    """A registered elevator in the list of a profile, with its certificate status."""
+
+    id: int
+    internal_reference: str
+    dge_number: str | None
+    address: str
+    postal_code: str
+    parish: str
+    building: str | None
+    owner: CompanyName
+    maintenance_company: CompanyName
+    # The company with a contract in force with the CMA, if any.
+    inspection_company: CompanyName | None
+    certificate_status: CertificateStatus
+    valid_until: date | None
+    # The most recent request, in any status.
+    latest_request: LatestRequestOut | None
+
+    @classmethod
+    def from_view(cls, v: ElevatorView) -> Self:
+        return cls.model_validate(_view_fields(v))
+
+
+def _view_fields(v: ElevatorView) -> dict:
+    e = v.elevator
+    return {
+        "id": e.id,
+        "internal_reference": e.internal_reference,
+        "dge_number": e.dge_number,
+        "address": e.address,
+        "postal_code": e.postal_code,
+        "parish": e.parish,
+        "building": e.building,
+        "owner": e.owner,
+        "maintenance_company": e.maintenance_company,
+        "inspection_company": v.inspection_company,
+        "certificate_status": v.certificate_status,
+        "valid_until": v.last_inspection.valid_until if v.last_inspection else None,
+        "latest_request": v.latest_request,
+    }
