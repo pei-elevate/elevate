@@ -97,9 +97,25 @@ jobs:
         with:
           projectBaseDir: app/backend
 
-  # The only required check in the main ruleset. New jobs go in its needs.
+  # Git Flow: main only takes pull requests from develop, release/* or hotfix/*.
+  source-branch:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          HEAD: ${{ github.head_ref }}
+        run: |
+          case "$HEAD" in
+            develop|release/*|hotfix/*) echo "Source branch $HEAD is allowed." ;;
+            *)
+              echo "Pull requests into main must come from develop, release/* or hotfix/*, not $HEAD."
+              exit 1
+              ;;
+          esac
+
+  # The only required check in the rulesets. New jobs go in its needs.
   ci:
-    needs: [frontend, backend]
+    needs: [frontend, backend, source-branch]
     if: always()
     runs-on: ubuntu-24.04
     steps:

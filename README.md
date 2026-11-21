@@ -94,5 +94,5 @@ We follow Git Flow:
 
 - `main` holds released code and `develop` holds the work for the next release. Both are protected: changes go through a pull request with one approval and an automatic Copilot review.
 - Start each change from `develop`, in a branch named after the Jira issue (for example `SCRUM-48-log-new-elevator-notice`), and open the pull request back into `develop` with the issue key in its title. It is merged with squash.
-- Releases and urgent fixes reach `main` from `develop` or a hotfix branch with a merge commit, and are merged back into `develop`.
+- Only `develop`, `release/*` and `hotfix/*` branches can open pull requests into `main`. They are merged with a merge commit, and releases and hotfixes are merged back into `develop`.
 - CI runs the frontend checks (lint, types, tests, build) and the backend checks (lint, format, tests) on every pull request.
