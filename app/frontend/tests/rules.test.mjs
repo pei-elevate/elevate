@@ -248,7 +248,7 @@ test('regras do protótipo', () => {
       date: '2026-10-19',
       type: 'Manual',
       subject: 'Necessidade de inspeção',
-      recipients: `${lift.owner}; ${lift.company}`,
+      recipients: `${lift.owner} e ${lift.company}`,
     },
   );
   assert.notEqual(

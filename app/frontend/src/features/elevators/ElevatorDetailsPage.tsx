@@ -11,7 +11,6 @@ import {
 import { elevatorDataModal } from '@/features/elevators/elevatorDataModal';
 import type { Elevator } from '@/features/elevators/types';
 import { noticeModal } from '@/features/notices/noticeModal';
-import { Recipients } from '@/features/notices/Recipients';
 import { sendManualNotice } from '@/features/notices/rules';
 import { ApiError } from '@/shared/api/client';
 import type { Role } from '@/shared/auth/roles';
@@ -190,15 +189,12 @@ export function ElevatorDetailsPage() {
   );
 
   const noticeTable = (
-    <DataTable headers={['Data', 'Tipo', 'Assunto', 'Destinatários', 'Ofício']}>
+    <DataTable headers={['Data', 'Tipo', 'Assunto', 'Ofício']}>
       {notices.map((n) => (
         <tr key={n.id}>
           <td>{formatDate(n.date)}</td>
           <td>{n.type}</td>
           <td>{n.subject}</td>
-          <td>
-            <Recipients value={n.recipients} />
-          </td>
           <td>
             <button
               className="text-button"
@@ -211,11 +207,11 @@ export function ElevatorDetailsPage() {
         </tr>
       ))}
       {!apiNotices.data ? (
-        <HistoryState colSpan={5} error={apiNotices.error} onRetry={apiNotices.retry} />
+        <HistoryState colSpan={4} error={apiNotices.error} onRetry={apiNotices.retry} />
       ) : (
         !notices.length && (
           <tr>
-            <td colSpan={5}>
+            <td colSpan={4}>
               <Empty>Sem avisos enviados.</Empty>
             </td>
           </tr>
