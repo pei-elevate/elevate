@@ -49,8 +49,8 @@ export function RequestTable({
               <small>{e?.dge}</small>
             </td>
             <td>
-              {e?.address}
-              <small>{e?.company}</small>
+              {r.address ?? e?.address}
+              <small>{r.company ?? e?.company}</small>
             </td>
             <td>{r.scope}</td>
             <td>

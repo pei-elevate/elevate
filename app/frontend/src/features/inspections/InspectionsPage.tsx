@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { RequestTable } from '@/features/inspections/RequestTable';
 import { formatDate } from '@/shared/lib/dates';
 import { normalize } from '@/shared/lib/text';
+import { Banner } from '@/shared/ui/Banner';
+import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { Metric } from '@/shared/ui/Metric';
 import { Panel } from '@/shared/ui/Panel';
@@ -16,10 +18,16 @@ export function InspectionsPage() {
     manager = s.route.role === 'gestor';
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('Todos');
-  const all = s.requests.filter(
-    (r) =>
-      !maintenance || s.elevators.some((e) => e.id === r.elevator && e.company === 'Elevar, Lda.'),
-  );
+  // A empresa de inspeção vê os pedidos que a API lhe atribui; os outros perfis ainda usam
+  // os dados de exemplo.
+  const loading = assigned && !s.assignedRequests;
+  const all = assigned
+    ? (s.assignedRequests ?? [])
+    : s.requests.filter(
+        (r) =>
+          !maintenance ||
+          s.elevators.some((e) => e.id === r.elevator && e.company === 'Elevar, Lda.'),
+      );
   const items = all.filter((r) => {
     const e = s.elevators.find((e) => e.id === r.elevator);
 
@@ -28,7 +36,9 @@ export function InspectionsPage() {
       // As inspeções concluídas ficam no histórico de cada elevador.
       (!manager || r.status !== 'Concluído') &&
       (status === 'Todos' || r.status === status) &&
-      normalize(`${r.id} ${r.elevator} ${e?.address} ${e?.company}`).includes(normalize(query))
+      normalize(
+        `${r.id} ${r.elevator} ${r.address ?? e?.address} ${r.company ?? e?.company}`,
+      ).includes(normalize(query))
     );
   });
 
@@ -85,6 +95,14 @@ export function InspectionsPage() {
           </Panel>
         </div>
       )}
+      {assigned && s.assignedError && (
+        <Banner
+          tone="warning"
+          action={<Button onClick={s.reloadAssignedRequests}>Tentar novamente</Button>}
+        >
+          Não foi possível carregar os pedidos atribuídos.
+        </Banner>
+      )}
       {assigned && (
         <section className="metrics three">
           <Metric
@@ -133,7 +151,11 @@ export function InspectionsPage() {
             </button>
           </div>
         )}
-        <RequestTable items={items} assigned={assigned} open={maintenance} />
+        {loading && !s.assignedError ? (
+          <p role="status">A carregar pedidos…</p>
+        ) : (
+          <RequestTable items={items} assigned={assigned} open={maintenance} />
+        )}
         <div className="panel-footer">
           <span>{items.length} pedido(s)</span>
         </div>

@@ -39,7 +39,7 @@ function Interface() {
       (n) => n.status === 'Não registado' || n.status === 'Parcialmente registado',
     ).length,
     reprovadas: s.failed.filter((f) => !f.resolved).length,
-    atribuidas: s.requests.filter((r) => r.status !== 'Concluído').length,
+    atribuidas: (s.assignedRequests ?? []).filter((r) => r.status !== 'Concluído').length,
     agendar: s.requests.filter((r) => r.status === 'Por agendar').length,
   };
 

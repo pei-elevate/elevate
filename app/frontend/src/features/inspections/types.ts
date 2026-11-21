@@ -9,4 +9,7 @@ export interface Request {
   performed?: string;
   report?: string;
   nonconformities?: string;
+  // Vindos da API; sem eles, a tabela procura o elevador nos dados de exemplo.
+  address?: string;
+  company?: string;
 }
