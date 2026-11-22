@@ -66,10 +66,15 @@ const requests = [
   apiRequest(),
 ];
 
-/** Responde aos pedidos de inspeção com `answer` (lista ou código de erro); o resto, vazio. */
-function stubApi(answer) {
+/** Responde aos pedidos de inspeção com `answer` (lista ou código de erro), aos elevadores
+ * com `elevators`; o resto, vazio. */
+function stubApi(answer, elevators = () => []) {
   const fetch = vi.fn(async (url) => {
-    const value = String(url) === '/api/inspections/requests' ? answer() : [];
+    const routes = {
+      '/api/inspections/requests?open=true': answer,
+      '/api/elevators': elevators,
+    };
+    const value = String(url) in routes ? routes[String(url)]() : [];
     return typeof value === 'number'
       ? new Response('{}', { status: value })
       : new Response(JSON.stringify(value), { status: 200 });
@@ -103,7 +108,8 @@ test('os pedidos são pedidos em nome do perfil', async () => {
   await listRequests('manutencao');
 
   const [url, init] = fetch.mock.calls[0];
-  assert.equal(url, '/api/inspections/requests');
+  // Só os pedidos em aberto: os concluídos ficam no histórico de cada elevador.
+  assert.equal(url, '/api/inspections/requests?open=true');
   assert.equal(init.headers['X-User-Id'], 'seed-maintenance');
 });
 
@@ -177,4 +183,60 @@ test('a referência num pedido abre a ficha pelo id que vem com o pedido', async
   await settle();
 
   assert.equal(router.state.location.pathname, '/historico/7');
+});
+
+function apiElevator(fields = {}) {
+  return {
+    id: 3,
+    internal_reference: '01.05.0203',
+    dge_number: null,
+    address: 'Rua João Mendonça 5',
+    postal_code: '3810-000',
+    parish: 'Glória e Vera Cruz',
+    building: null,
+    owner: { name: 'Condomínio Mendonça 5' },
+    maintenance_company: { name: 'Ascende, Lda.' },
+    inspection_company: { name: 'Inspeção Centro, S.A.' },
+    certificate_status: 'due_soon',
+    valid_until: '2026-12-12',
+    latest_request: null,
+    ...fields,
+  };
+}
+
+test('os prazos próximos são os elevadores da empresa com o certificado a vencer', async () => {
+  stubApi(
+    () => requests,
+    () => [
+      apiElevator(),
+      apiElevator({ id: 4, internal_reference: '01.05.0300', certificate_status: 'valid' }),
+    ],
+  );
+  await mount('manutencao', '/inspecoes');
+
+  assert.match(main(), /01\.05\.0203/);
+  assert.match(main(), /Rua João Mendonça 5/);
+  assert.doesNotMatch(main(), /01\.05\.0300/);
+  assert.doesNotMatch(main(), /A carregar/);
+});
+
+test('os painéis da manutenção dizem que estão a carregar', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => new Promise(() => {})),
+  );
+  await mount('manutencao', '/inspecoes');
+
+  assert.match(main(), /A carregar prazos…/);
+  assert.match(main(), /A carregar visitas…/);
+});
+
+test('os prazos avisam quando os elevadores não carregam', async () => {
+  stubApi(
+    () => requests,
+    () => 500,
+  );
+  await mount('manutencao', '/inspecoes');
+
+  assert.match(main(), /Não foi possível carregar os prazos\./);
 });

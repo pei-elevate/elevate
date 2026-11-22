@@ -311,7 +311,7 @@ test('as reprovadas e os pedidos abrem a ficha pelo id da API', async () => {
 test('a referência num pedido abre a ficha pelo id da API', async () => {
   stubApi({
     ...api,
-    '/inspections/requests': [
+    '/inspections/requests?open=true': [
       {
         id: 1,
         process_number: '2026/0362',

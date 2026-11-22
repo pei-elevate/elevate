@@ -285,3 +285,14 @@ def test_the_service_gives_other_profiles_nothing(db: Session, requests):
     owner = User(external_id="o", name="o", email="o@ex.pt", role=UserRole.OWNER)
 
     assert service.list_requests(db, owner) == []
+
+
+@pytest.mark.parametrize(
+    ("headers", "expected"),
+    [
+        (MAINTENANCE_A, ["2026/0377", "2026/0341"]),
+        (MANAGER, ["2026/0400", "2026/0377", "2026/0341"]),
+    ],
+)
+def test_open_leaves_out_the_completed_ones(client: TestClient, requests, headers, expected):
+    assert numbers(client.get(URL, headers=headers, params={"open": "true"})) == expected

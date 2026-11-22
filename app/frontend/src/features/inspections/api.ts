@@ -52,9 +52,12 @@ export function listAssignedRequests(role: Role) {
   return api<ApiAssignedRequest[]>('/inspections/assigned', role);
 }
 
-/** Pedidos da empresa de manutenção (os dos seus elevadores) ou do gestor (todos). */
+/**
+ * Pedidos em aberto da empresa de manutenção (os dos seus elevadores) ou do gestor (todos).
+ * Os concluídos ficam no histórico de cada elevador, por isso não se pedem.
+ */
 export function listRequests(role: Role) {
-  return api<ApiTrackedRequest[]>('/inspections/requests', role);
+  return api<ApiTrackedRequest[]>('/inspections/requests?open=true', role);
 }
 
 /**

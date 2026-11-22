@@ -11,20 +11,22 @@ def list_requests(
     inspection_company_id: int | None = None,
     maintenance_company_id: int | None = None,
     status: RequestStatus | None = None,
+    only_open: bool = False,
     text: str | None = None,
+    with_inspection_company: bool = False,
 ) -> list[InspectionRequest]:
     """Requests by status (awaiting scheduling first) and oldest first.
 
     inspection_company_id keeps the ones assigned to that company, maintenance_company_id the
-    ones for the elevators it maintains; with neither, all of them. text matches part of the
-    process number, the internal reference or the address.
+    ones for the elevators it maintains; with neither, all of them. only_open leaves out the
+    completed ones. text matches part of the process number, the internal reference or the
+    address. with_inspection_company also loads the company that handles each request.
     """
     query = (
         select(InspectionRequest)
         .join(InspectionRequest.elevator)
         .options(
             joinedload(InspectionRequest.elevator).joinedload(Elevator.maintenance_company),
-            joinedload(InspectionRequest.inspection_company),
             joinedload(InspectionRequest.inspection),
         )
         .order_by(InspectionRequest.status, InspectionRequest.submitted_at, InspectionRequest.id)
@@ -33,6 +35,10 @@ def list_requests(
         query = query.where(InspectionRequest.inspection_company_id == inspection_company_id)
     if maintenance_company_id is not None:
         query = query.where(Elevator.maintenance_company_id == maintenance_company_id)
+    if with_inspection_company:
+        query = query.options(joinedload(InspectionRequest.inspection_company))
+    if only_open:
+        query = query.where(InspectionRequest.status != RequestStatus.COMPLETED)
     if status is not None:
         query = query.where(InspectionRequest.status == status)
     if text:

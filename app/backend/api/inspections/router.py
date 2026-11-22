@@ -29,8 +29,13 @@ def list_assigned(
 
 @router.get("/requests", response_model=list[RequestStatusOut])
 def list_requests(
-    db: Db, user: Follower, request_status: Status = None, q: Text = None
+    db: Db,
+    user: Follower,
+    request_status: Status = None,
+    q: Text = None,
+    only_open: Annotated[bool, Query(alias="open")] = False,
 ) -> list[InspectionRequest]:
     """Requests and their status: a maintenance company's elevators, or all of them for the
-    municipal manager (Check Request / Inspection Status)."""
-    return service.list_requests(db, user, request_status, q)
+    municipal manager (Check Request / Inspection Status). open=true leaves out the
+    completed ones."""
+    return service.list_requests(db, user, request_status, q, only_open)

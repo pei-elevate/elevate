@@ -22,23 +22,32 @@ def list_assigned_requests(
 
 
 def list_requests(
-    db: Session, user: User, status: RequestStatus | None = None, text: str | None = None
+    db: Session,
+    user: User,
+    status: RequestStatus | None = None,
+    text: str | None = None,
+    only_open: bool = False,
 ) -> list[InspectionRequest]:
     """The requests whose status the user follows (Check Request / Inspection Status).
 
     A maintenance company sees the ones for the elevators it maintains, the municipal manager
     all of them. Anyone else, or a maintenance user without a company, sees none.
+    only_open leaves out the completed ones, which stay in each elevator's history.
     """
     if user.role == UserRole.MUNICIPAL_MANAGER:
-        return repository.list_requests(db, status=status, text=_clean(text))
-    if user.role == UserRole.MAINTENANCE and user.maintenance_company_id is not None:
-        return repository.list_requests(
-            db,
-            maintenance_company_id=user.maintenance_company_id,
-            status=status,
-            text=_clean(text),
-        )
-    return []
+        scope = {}
+    elif user.role == UserRole.MAINTENANCE and user.maintenance_company_id is not None:
+        scope = {"maintenance_company_id": user.maintenance_company_id}
+    else:
+        return []
+    return repository.list_requests(
+        db,
+        **scope,
+        status=status,
+        only_open=only_open,
+        text=_clean(text),
+        with_inspection_company=True,
+    )
 
 
 def _clean(text: str | None) -> str | None:

@@ -24,19 +24,18 @@ export function InspectionsPage() {
   const error = assigned ? s.assignedError : s.trackedError;
   const loading = !loaded;
   const all = loaded ?? [];
-  const items = all.filter((r) => {
-    const e = s.elevators.find((e) => e.id === r.elevator);
-
-    return (
+  // Prazos da empresa de manutenção: os seus elevadores com o certificado a vencer.
+  const deadlines = s.apiElevators?.filter((e) => e.status === 'A vencer');
+  const items = all.filter(
+    (r) =>
       (!maintenance || !['Agendado', 'Concluído'].includes(r.status)) &&
       // As inspeções concluídas ficam no histórico de cada elevador.
       (!manager || r.status !== 'Concluído') &&
       (status === 'Todos' || r.status === status) &&
-      normalize(
-        `${r.id} ${r.elevator} ${r.address ?? e?.address} ${r.company ?? e?.company}`,
-      ).includes(normalize(query))
-    );
-  });
+      normalize(`${r.id} ${r.elevator} ${r.address ?? ''} ${r.company ?? ''}`).includes(
+        normalize(query),
+      ),
+  );
 
   return (
     <>
@@ -55,22 +54,26 @@ export function InspectionsPage() {
       {maintenance && (
         <div className="two-columns">
           <Panel title="Prazos próximos">
-            {s.elevators
-              .filter((e) => e.status === 'A vencer' && e.company === 'Elevar, Lda.')
-              .map((e) => (
-                <div className="deadline-row" key={e.id}>
-                  <div>
-                    <strong>{e.id}</strong>
-                    <p>{e.address}</p>
-                  </div>
-                  <div>
-                    <strong>{formatDate(e.validUntil)}</strong>
-                    <small>Fim de validade do certificado</small>
-                  </div>
+            {s.apiElevatorsError ? (
+              <p>Não foi possível carregar os prazos.</p>
+            ) : (
+              !deadlines && <p role="status">A carregar prazos…</p>
+            )}
+            {deadlines?.map((e) => (
+              <div className="deadline-row" key={e.id}>
+                <div>
+                  <strong>{e.id}</strong>
+                  <p>{e.address}</p>
                 </div>
-              ))}
+                <div>
+                  <strong>{formatDate(e.validUntil)}</strong>
+                  <small>Fim de validade do certificado</small>
+                </div>
+              </div>
+            ))}
           </Panel>
           <Panel title="Visitas agendadas">
+            {loading && !error && <p role="status">A carregar visitas…</p>}
             {all
               .filter((r) => r.status === 'Agendado')
               .map((r) => (
