@@ -12,6 +12,7 @@ export interface ApiAssignedRequest {
   scheduled_at: string | null;
   elevator: {
     internal_reference: string | null;
+    dge_number: string | null;
     address: string;
     maintenance_company: { name: string; phone: string | null; email: string | null };
   };
@@ -98,6 +99,7 @@ export function toRequest(r: ApiAssignedRequest): Request {
   return {
     id: r.process_number,
     elevator: r.elevator.internal_reference ?? '',
+    dge: r.elevator.dge_number ?? '—',
     date: r.submitted_at.slice(0, 10),
     scope: scopes[r.type],
     status: statuses[r.status],

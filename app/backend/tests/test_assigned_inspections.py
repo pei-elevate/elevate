@@ -185,6 +185,7 @@ def test_returns_the_elevator_and_the_contact_but_not_the_owner(client: TestClie
     assert scheduled["inspection"] is None
     assert scheduled["elevator"] == {
         "internal_reference": "01.05.0154",
+        "dge_number": None,
         "address": "Avenida Lourenço Peixinho 50",
         "postal_code": "3810-000",
         "parish": "Glória e Vera Cruz",

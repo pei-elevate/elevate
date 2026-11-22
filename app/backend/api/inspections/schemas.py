@@ -23,6 +23,7 @@ class AssignedElevator(OrmSchema):
     """Only what the inspection company needs to find the elevator: no owner data."""
 
     internal_reference: str | None
+    dge_number: str | None
     address: str
     postal_code: str
     parish: str

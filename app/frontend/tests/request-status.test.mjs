@@ -45,6 +45,7 @@ function apiRequest(fields = {}) {
     elevator: {
       id: 7,
       internal_reference: '01.05.0154',
+      dge_number: 'DGE-99154',
       address: 'Avenida Lourenço Peixinho 50',
       maintenance_company: { name: 'Elevar, Lda.', phone: null, email: null },
     },
@@ -113,6 +114,7 @@ test('um pedido acompanhado traz a empresa de inspeção e o id do elevador', ()
   assert.equal(request.address, 'Avenida Lourenço Peixinho 50');
   assert.equal(request.inspectionCompany, 'Inspeção Centro, S.A.');
   assert.equal(request.elevatorKey, 7);
+  assert.equal(request.dge, 'DGE-99154');
 });
 
 test('a carga entrega os pedidos já convertidos', async () => {
@@ -135,6 +137,8 @@ test('a empresa de manutenção vê os pedidos da API e as visitas agendadas', a
   // A tabela só mostra os que ainda não estão agendados.
   assert.match(main(), /2026\/0388/);
   assert.match(main(), /Rua do Gravito 18/);
+  // O n.º DGE vem da API, não dos dados de exemplo.
+  assert.match(main(), /DGE-99154/);
   // O agendado aparece nas visitas, com a morada e a empresa de inspeção que o trata.
   assert.match(main(), /Avenida Lourenço Peixinho 50 · 10:00/);
   assert.match(main(), /Inspeção Centro, S\.A\./);

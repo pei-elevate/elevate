@@ -40,6 +40,7 @@ test('um pedido agendado fica no formato da tabela', () => {
   assert.deepEqual(toRequest(apiRequest()), {
     id: '2026/0341',
     elevator: '01.05.0154',
+    dge: '—',
     date: '2026-10-02',
     scope: 'Inspeção',
     status: 'Agendado',

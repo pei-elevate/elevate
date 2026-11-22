@@ -211,9 +211,11 @@ function useModel(initialRole: Role) {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a página e trackedReloads são gatilhos, para voltar a pedir os pedidos ao mudar de página ou ao tentar de novo
   useEffect(() => {
-    // Só a empresa de manutenção e o gestor acompanham o estado dos pedidos.
+    // Só a empresa de manutenção e o gestor acompanham o estado dos pedidos, e só no ecrã
+    // dos pedidos: a lista do gestor tem todos os do município.
     const role = route.role;
     if (role !== 'manutencao' && role !== 'gestor') return;
+    if (route.page !== 'inspecoes' && route.page !== 'pedidos') return;
 
     setTrackedError(false);
 

@@ -57,7 +57,7 @@ export function RequestTable({
               ) : (
                 <strong>{r.elevator}</strong>
               )}
-              <small>{e?.dge}</small>
+              <small>{r.dge ?? e?.dge}</small>
             </td>
             <td>
               {r.address ?? e?.address}

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from api.accounts.models import InspectionCompany, MaintenanceCompany, Owner, User, UserRole
 from api.elevators.models import Elevator, EquipmentType
+from api.inspections import service
 from api.inspections.models import (
     Inspection,
     InspectionRequest,
@@ -85,6 +86,7 @@ def elevators(db: Session, maintenance_companies: list[MaintenanceCompany]) -> l
             postal_code="3810-000",
             parish="Glória e Vera Cruz",
             service_date=date(2020, 1, 1),
+            dge_number=f"DGE-10{reference[-3:]}",
         )
         for reference, address, company in [
             ("01.05.0203", "Rua do Gravito 18", a),
@@ -214,6 +216,7 @@ def test_returns_where_the_request_stands_and_who_handles_it(client: TestClient,
         "email": "geral@inspeave.pt",
     }
     assert scheduled["elevator"]["internal_reference"] == "01.05.0154"
+    assert scheduled["elevator"]["dge_number"] == "DGE-10154"
     assert scheduled["elevator"]["address"] == "Avenida Lourenço Peixinho 50"
     assert scheduled["elevator"]["maintenance_company"]["name"] == "Elevar, Lda."
     assert isinstance(scheduled["elevator"]["id"], int)
@@ -279,8 +282,6 @@ def test_a_maintenance_user_without_a_company_sees_nothing(
 
 
 def test_the_service_gives_other_profiles_nothing(db: Session, requests):
-    from api.inspections import service
-
     owner = User(external_id="o", name="o", email="o@ex.pt", role=UserRole.OWNER)
 
     assert service.list_requests(db, owner) == []
