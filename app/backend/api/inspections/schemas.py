@@ -10,8 +10,9 @@ class OrmSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MaintenanceCompanyContact(OrmSchema):
-    """Who the inspection company contacts to schedule the visit."""
+class CompanyContact(OrmSchema):
+    """A company and how to reach it: the maintenance company, to schedule the visit, or the
+    inspection company, to follow up on the request."""
 
     name: str
     phone: str | None
@@ -22,11 +23,12 @@ class AssignedElevator(OrmSchema):
     """Only what the inspection company needs to find the elevator: no owner data."""
 
     internal_reference: str | None
+    dge_number: str | None
     address: str
     postal_code: str
     parish: str
     building: str | None
-    maintenance_company: MaintenanceCompanyContact
+    maintenance_company: CompanyContact
 
 
 class InspectionOutcome(OrmSchema):
@@ -36,9 +38,7 @@ class InspectionOutcome(OrmSchema):
     correction_deadline: date | None
 
 
-class AssignedRequestOut(OrmSchema):
-    """An inspection request assigned to the company, with its result once submitted."""
-
+class RequestOut(OrmSchema):
     id: int
     process_number: str
     type: RequestType
@@ -47,5 +47,23 @@ class AssignedRequestOut(OrmSchema):
     submitted_at: datetime
     scheduled_at: datetime | None
 
-    elevator: AssignedElevator
     inspection: InspectionOutcome | None
+
+
+class AssignedRequestOut(RequestOut):
+    """An inspection request assigned to the company, with its result once submitted."""
+
+    elevator: AssignedElevator
+
+
+class TrackedElevator(AssignedElevator):
+    # To open the elevator's page.
+    id: int
+
+
+class RequestStatusOut(RequestOut):
+    """A request as the maintenance company or the municipal manager follow it: where it
+    stands, which inspection company handles it, and the result once submitted."""
+
+    elevator: TrackedElevator
+    inspection_company: CompanyContact

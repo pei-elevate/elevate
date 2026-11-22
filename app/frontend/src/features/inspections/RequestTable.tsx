@@ -44,7 +44,12 @@ export function RequestTable({
                 <button
                   className="text-button"
                   onClick={() =>
-                    s.go(detailPage(s.route.role), detailId(r.elevator, s.apiElevators))
+                    s.go(
+                      detailPage(s.route.role),
+                      r.elevatorKey === undefined
+                        ? detailId(r.elevator, s.apiElevators)
+                        : String(r.elevatorKey),
+                    )
                   }
                 >
                   {r.elevator}
@@ -52,7 +57,7 @@ export function RequestTable({
               ) : (
                 <strong>{r.elevator}</strong>
               )}
-              <small>{e?.dge}</small>
+              <small>{r.dge ?? e?.dge}</small>
             </td>
             <td>
               {r.address ?? e?.address}

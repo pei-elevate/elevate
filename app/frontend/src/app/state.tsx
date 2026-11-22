@@ -20,7 +20,7 @@ import {
 import type { ApiRegistration } from '@/features/elevators/api';
 import type { Elevator, ElevatorFilters } from '@/features/elevators/types';
 import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
-import { loadAssignedRequests } from '@/features/inspections/api';
+import { loadAssignedRequests, loadRequests } from '@/features/inspections/api';
 import type { Request as InspectionRequest } from '@/features/inspections/types';
 import {
   failedInspections as seedFailedInspections,
@@ -65,6 +65,8 @@ export function readRoute(pathname: string, state: unknown, fallback: Role) {
 
 type SavedElevators = { role: Role; items: Elevator[] };
 
+type SavedRequests = { role: Role; items: InspectionRequest[] };
+
 /** A lista da API, só se pertencer ao perfil atual; senão, null (ainda a carregar). */
 export function elevatorsFor(saved: SavedElevators | null, role: Role) {
   return saved?.role === role ? saved.items : null;
@@ -104,6 +106,13 @@ function useModel(initialRole: Role) {
   const [assignedRequests, setAssignedRequests] = useState<InspectionRequest[] | null>(null);
   const [assignedError, setAssignedError] = useState(false);
   const [assignedReloads, setAssignedReloads] = useState(0);
+  // Pedidos que a empresa de manutenção (os dos seus elevadores) e o gestor (todos)
+  // acompanham, vindos da API. Guardados com o perfil a que pertencem, para não mostrar os
+  // de outro ao trocar de perfil. null enquanto carregam.
+  const [savedRequests, setSavedRequests] = useState<SavedRequests | null>(null);
+  const trackedRequests = savedRequests?.role === route.role ? savedRequests.items : null;
+  const [trackedError, setTrackedError] = useState(false);
+  const [trackedReloads, setTrackedReloads] = useState(0);
   // Elevadores do perfil, vindos da API: a lista e o painel mostram os mesmos. null enquanto
   // carregam. s.elevators (os mocks) continua para os ecrãs que ainda não usam a API.
   // Guardada com o perfil a que pertence, para não mostrar a de outro ao trocar de perfil.
@@ -199,6 +208,23 @@ function useModel(initialRole: Role) {
 
     return loadAssignedRequests(route.role, setAssignedRequests, () => setAssignedError(true));
   }, [route.role, route.page, assignedReloads]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a página e trackedReloads são gatilhos, para voltar a pedir os pedidos ao mudar de página ou ao tentar de novo
+  useEffect(() => {
+    // Só a empresa de manutenção e o gestor acompanham o estado dos pedidos, e só no ecrã
+    // dos pedidos: a lista do gestor tem todos os do município.
+    const role = route.role;
+    if (role !== 'manutencao' && role !== 'gestor') return;
+    if (route.page !== 'inspecoes' && route.page !== 'pedidos') return;
+
+    setTrackedError(false);
+
+    return loadRequests(
+      role,
+      (items) => setSavedRequests({ role, items }),
+      () => setTrackedError(true),
+    );
+  }, [route.role, route.page, trackedReloads]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a página e apiElevatorsReloads são gatilhos, para voltar a pedir os elevadores ao mudar de página ou ao tentar de novo
   useEffect(() => {
@@ -354,6 +380,9 @@ function useModel(initialRole: Role) {
     assignedRequests,
     assignedError,
     reloadAssignedRequests: () => setAssignedReloads((n) => n + 1),
+    trackedRequests,
+    trackedError,
+    reloadTrackedRequests: () => setTrackedReloads((n) => n + 1),
     apiElevators,
     apiElevatorsError,
     reloadApiElevators: () => setApiElevatorsReloads((n) => n + 1),
