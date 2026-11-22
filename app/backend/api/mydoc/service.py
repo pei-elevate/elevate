@@ -58,7 +58,7 @@ def ingest(db: Session, raw: Any) -> Outcome:
     existing = repository.find_request(db, number)
     if existing is not None:
         return Outcome(
-            Kind.DUPLICATE, number, submitted_at, warnings=_differences(existing, registo)
+            Kind.DUPLICATE, number, submitted_at, warnings=tuple(_differences(existing, registo))
         )
 
     elevator = repository.find_elevator(db, registo.registo)
@@ -128,7 +128,10 @@ def ingest(db: Session, raw: Any) -> Outcome:
         if existing is not None:
             # Another process created the same process number in the meantime.
             return Outcome(
-                Kind.DUPLICATE, number, submitted_at, warnings=_differences(existing, registo)
+                Kind.DUPLICATE,
+                number,
+                submitted_at,
+                warnings=tuple(_differences(existing, registo)),
             )
         # Something else changed under us (e.g. the elevator was removed): try again later.
         return Outcome(Kind.PENDING, number, submitted_at, f"could not save: {error.orig}")
@@ -145,7 +148,7 @@ def _failed_inspection(db: Session, elevator_id: int) -> Inspection | None:
     return last
 
 
-def _differences(existing: InspectionRequest, registo: Registo) -> tuple[str, ...]:
+def _differences(existing: InspectionRequest, registo: Registo) -> list[str]:
     """A process number is never reused in MyDoc. If the same number comes back with other
     data, something is wrong upstream: Elevate keeps what it has and says so."""
     differences = [
@@ -158,8 +161,8 @@ def _differences(existing: InspectionRequest, registo: Registo) -> tuple[str, ..
         if theirs != ours
     ]
     if not differences:
-        return ()
-    return ("already in Elevate with other data (" + "; ".join(differences) + "); kept Elevate's",)
+        return []
+    return ["already in Elevate with other data (" + "; ".join(differences) + "); kept Elevate's"]
 
 
 def _describe(error: ValidationError) -> str:

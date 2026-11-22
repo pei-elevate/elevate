@@ -40,10 +40,13 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     task = asyncio.create_task(
         mydoc_poller.poll_forever(fetch, SessionLocal, settings.mydoc_poll_seconds)
     )
-    yield
-    task.cancel()
-    with suppress(asyncio.CancelledError):
-        await task
+    try:
+        yield
+    finally:
+        # Also when the app stops because of an error, so the poller never outlives it.
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 app = FastAPI(

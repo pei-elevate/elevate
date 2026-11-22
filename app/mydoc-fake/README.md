@@ -20,7 +20,7 @@ docker compose exec backend python -m api.seed   # the elevators the requests po
 | http://localhost:8001/docs | Swagger: list and create requests |
 | http://localhost:8001/registos | The requests, as JSON |
 
-The backend asks for new requests every 30 seconds (`MYDOC_POLL_SECONDS`). To see them in Elevate, open http://localhost/atribuidas with the demo profile "Empresa de inspeção". Only that page reads from the API for now; the manager's "Pedidos de inspeção" page still shows sample data.
+The backend asks for new requests every 30 seconds (`MYDOC_POLL_SECONDS`). To see them in Elevate, open http://localhost/atribuidas with the demo profile "Empresa de inspeção".
 
 ## API
 
