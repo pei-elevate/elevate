@@ -11,7 +11,7 @@ The architecture diagrams live in the team's Google Drive, in the "Arquitetura" 
 | Backend | FastAPI | `app/backend/` |
 | Database | PostgreSQL | Schema managed by Alembic migrations |
 | File storage | SeaweedFS | Registration documents and inspection reports, through the S3 API only; added with the first story that stores files |
-| Authentication | Authentik | Accounts and roles over standard OIDC; owners will log in with Autenticação.gov through it |
+| Authentication | Keycloak ([why](Keycloak.md)) | Accounts and roles over standard OIDC; owners will log in with Autenticação.gov through it |
 | Email | SMTP | The CMA relay in production; added with the first story that sends email |
 | CMA records | MyDoc (AIRC), external | Source of inspection requests, behind an adapter in `api/mydoc/` |
 
@@ -31,4 +31,4 @@ Global modules sit at the top of `api/`: `config.py` (settings from environment 
 
 ## Authentication (provisional)
 
-Until Authentik is connected, `api/auth.py` takes the user from the `X-User-Id` header, which holds the `external_id` of a row in `users`. After `python -m api.seed`, use `seed-municipal-manager`, `seed-maintenance`, `seed-owner`, `seed-urban-planning` or `seed-inspection`. Endpoints ask for a role with `Depends(require_role(UserRole.X))`. Anyone can send any value, so this must not reach production: when Authentik arrives, only `get_current_user` changes to validate the OIDC token.
+Until Keycloak is connected, `api/auth.py` takes the user from the `X-User-Id` header, which holds the `external_id` of a row in `users`. After `python -m api.seed`, use `seed-municipal-manager`, `seed-maintenance`, `seed-owner`, `seed-urban-planning` or `seed-inspection`. Endpoints ask for a role with `Depends(require_role(UserRole.X))`. Anyone can send any value, so this must not reach production: when Keycloak arrives, only `get_current_user` changes to validate the OIDC token.
