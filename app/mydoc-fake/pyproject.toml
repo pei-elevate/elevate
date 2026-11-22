@@ -1,0 +1,25 @@
+[project]
+name = "mydoc-fake"
+version = "0.1.0"
+description = "MyDoc falso: os pedidos de inspeção que o Elevate vai buscar (ELEV-50)"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.162.2",
+    "tzdata>=2025.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.4",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

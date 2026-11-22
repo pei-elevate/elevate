@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     postgres_password: str
     postgres_db: str
 
+    # MyDoc (api/mydoc). Without a URL, Elevate does not fetch inspection requests.
+    mydoc_url: str | None = None
+    mydoc_poll_seconds: float = 30
+    mydoc_timeout_seconds: float = 10
+
     @property
     def database_url(self) -> URL:
         # URL.create encodes the password, so any character is allowed.

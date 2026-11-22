@@ -61,6 +61,24 @@ jobs:
           name: backend-coverage
           path: app/backend/coverage.xml
 
+  mydoc-fake:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: app/mydoc-fake
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: app/mydoc-fake/uv.lock
+
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest
+
   # Informative only: not in the needs of the ci job.
   sonar:
     needs: [frontend, backend]
@@ -115,7 +133,7 @@ jobs:
 
   # The only required check in the rulesets. New jobs go in its needs.
   ci:
-    needs: [frontend, backend, source-branch]
+    needs: [frontend, backend, mydoc-fake, source-branch]
     if: always()
     runs-on: ubuntu-24.04
     steps:
