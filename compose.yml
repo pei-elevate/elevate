@@ -42,7 +42,8 @@ services:
       # Keeps the requests across restarts, so process numbers are never reused.
       MYDOC_DATA_FILE: /data/registos.json
     ports:
-      - "8001:8000"
+      # Only from this computer: anyone on the network could otherwise create requests.
+      - "127.0.0.1:8001:8000"
     volumes:
       - ./app/mydoc-fake:/app
       - /app/.venv

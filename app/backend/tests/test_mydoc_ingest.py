@@ -240,6 +240,8 @@ def test_an_open_request_of_another_type_is_no_warning(db, company, elevator):
 
 @pytest.mark.parametrize("status", [ElevatorStatus.INACTIVE, ElevatorStatus.SEALED])
 def test_inactive_and_sealed_elevators_still_get_requests(db, company, status):
+    # A sealed elevator needs an inspection to be put back in service, and an inactive one may
+    # be brought back: the elevator's status does not stop a request.
     add_elevator(db, "01.05.0079", status=status)
 
     assert ingest(db, registo()).kind == Kind.CREATED

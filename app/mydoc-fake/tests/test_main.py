@@ -35,6 +35,14 @@ def test_desde_keeps_requests_registered_at_or_after_it(client):
     assert [r["processo"] for r in response.json()] == ["2026/0403", "2026/0404"]
 
 
+def test_desde_with_a_time_zone_is_read_as_lisbon_time(client):
+    # 10:05 in Lisbon is 10:05 UTC in November (no summer time).
+    response = client.get("/registos", params={"desde": "2026-11-18T10:05:00+00:00"})
+
+    assert response.status_code == 200
+    assert [r["processo"] for r in response.json()] == ["2026/0403", "2026/0404"]
+
+
 def test_creating_a_request_numbers_and_dates_it(client):
     response = client.post(
         "/registos", json={"registo": "01.05.0203", "tipo_inspecao": "reinspection"}

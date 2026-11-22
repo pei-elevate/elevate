@@ -75,6 +75,10 @@ def ingest(db: Session, raw: Any) -> Outcome:
             f"no inspection company with a contract in force on {submitted_at.date()}",
         )
 
+    # The elevator's status (active, inactive, sealed) is not checked on purpose: a sealed
+    # elevator needs an inspection to be put back in service, and an inactive one may be
+    # brought back. MyNet already validated the request.
+
     original_inspection_id, reinspection_warning = None, None
     if registo.tipo_inspecao == RequestType.REINSPECTION:
         failed = _failed_inspection(db, elevator.id)
@@ -101,6 +105,9 @@ def ingest(db: Session, raw: Any) -> Outcome:
             f"the form says {registo.tipo_equipamento}, elevator {registo.registo} is "
             f"registered as {elevator.equipment_type}; kept the form's"
         )
+    # Unlike a repeated re-inspection (skipped above), a second open periodic or extraordinary
+    # request may be legitimate, e.g. an earlier one left open by mistake. Nothing ties it to
+    # the first one, so it enters and the warning lets the CMA decide.
     if repository.has_open_request(db, elevator.id, registo.tipo_inspecao):
         warnings.append(
             f"elevator {registo.registo} already has an open {registo.tipo_inspecao} request"

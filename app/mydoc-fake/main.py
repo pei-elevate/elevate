@@ -137,6 +137,8 @@ def list_registos(
     """Registered requests, oldest first."""
     registos = app.state.registos
     if desde is not None:
+        if desde.tzinfo is not None:  # Stored times have no time zone: they are Aveiro's
+            desde = desde.astimezone(LOCAL_TIME).replace(tzinfo=None)
         registos = [r for r in registos if r.registado_em >= desde]
     return sorted(registos, key=lambda r: (r.registado_em, r.processo))
 
