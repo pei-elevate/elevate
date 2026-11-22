@@ -15,6 +15,7 @@ Project site: https://pei-elevate.github.io/elevate-site/
 | Path | What |
 | --- | --- |
 | `app/frontend/` | Web interface (React, TypeScript, Vite). It started as the clickable prototype from [`elevate-mockups`](https://github.com/pei-elevate/elevate-mockups) and is being turned into the MVP frontend. See its [README](app/frontend/README.md). |
+| `app/mydoc-fake/` | Stands in for the CMA's MyDoc, where inspection requests come from, until Elevate can reach the real one. See its [README](app/mydoc-fake/README.md). |
 | `app/backend/` | API (FastAPI, SQLAlchemy, Alembic). One package per area in `api/`: `accounts`, `elevators`, `permits`, `inspections`, `notices` and `mydoc`. |
 | `docs/` | Architecture, the data model (`database/schema.dbml`, open it in [dbdiagram.io](https://dbdiagram.io)) and plans. |
 | `infra/` | Configuration of the infrastructure services, such as the Nginx reverse proxy. |
@@ -36,6 +37,7 @@ Every variable has a development default, so it also starts without a `.env`. Th
 | http://localhost | Frontend |
 | http://localhost/api/health | Backend health check |
 | http://localhost/api/docs | API documentation (Swagger) |
+| http://localhost:8001/docs | Fake MyDoc: create an inspection request with `POST /registos` |
 | `localhost:5432` | PostgreSQL |
 
 The frontend and the backend reload when you save a file. The backend applies the database migrations (`alembic upgrade head`) when it starts.
