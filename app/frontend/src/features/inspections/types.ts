@@ -12,4 +12,7 @@ export interface Request {
   // Vindos da API; sem eles, a tabela procura o elevador nos dados de exemplo.
   address?: string;
   company?: string;
+  inspectionCompany?: string;
+  // Id do elevador na API, para abrir a ficha.
+  elevatorKey?: number;
 }

@@ -309,7 +309,27 @@ test('as reprovadas e os pedidos abrem a ficha pelo id da API', async () => {
 });
 
 test('a referência num pedido abre a ficha pelo id da API', async () => {
-  stubApi(api);
+  stubApi({
+    ...api,
+    '/inspections/requests': [
+      {
+        id: 1,
+        process_number: '2026/0362',
+        type: 'reinspection',
+        status: 'awaiting_scheduling',
+        submitted_at: '2026-10-09T09:00:00',
+        scheduled_at: null,
+        elevator: {
+          id: 5,
+          internal_reference: '01.05.0231',
+          address: 'Rua Eng. Von Haff 40',
+          maintenance_company: { name: 'Elevar, Lda.', phone: null, email: null },
+        },
+        inspection_company: { name: 'Inspeave, Lda.', phone: null, email: null },
+        inspection: null,
+      },
+    ],
+  });
   const { router } = await mount('gestor', '/pedidos');
 
   await click('01.05.0231');
