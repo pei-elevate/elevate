@@ -8,6 +8,7 @@ from api.inspections.models import InspectionResult, RequestStatus, RequestType
 
 LOCAL_TIME = ZoneInfo("Europe/Lisbon")
 
+
 class OrmSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
