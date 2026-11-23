@@ -1,8 +1,14 @@
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { usePrototype } from '@/app/state';
-import { registrationChanges, resubmitRegistration } from '@/features/elevators/rules';
+import {
+  correctRegistration,
+  registrationError,
+  submitRegistration,
+} from '@/features/elevators/api';
+import type { ApiRegistration } from '@/features/elevators/api';
+import { toRegistrationBody, toRegistrationValues } from '@/features/elevators/registration';
 import { validateRegistration } from '@/features/elevators/validation';
-import { reconcileNotices } from '@/features/permits/rules';
 import { FormShell } from '@/shared/forms/FormShell';
 import { OwnerAddressFields } from '@/shared/forms/OwnerAddressFields';
 import { useSubmissionForm } from '@/shared/forms/useSubmissionForm';
@@ -17,30 +23,49 @@ const title = 'Registar elevador';
 /** Registo de um elevador novo, ou correção de um registo rejeitado (`registar/<id>`). */
 export function RegisterElevatorForm() {
   const s = usePrototype();
-  const registration = s.registrations.find((r) => r.id === s.route.id);
+
+  if (!s.route.id) return <RegistrationForm />;
+
+  // A correção parte do registo rejeitado, que vem da lista dos registos submetidos.
+  if (s.route.role === 'manutencao' && !s.submittedRegistrations)
+    return (
+      <>
+        <Heading title="Corrigir registo" />
+        {s.submittedError ? (
+          <Banner
+            tone="warning"
+            action={<Button onClick={s.reloadSubmittedRegistrations}>Tentar de novo</Button>}
+          >
+            Não foi possível carregar o registo.
+          </Banner>
+        ) : (
+          <p role="status">A carregar registo…</p>
+        )}
+      </>
+    );
+
+  const registration = s.submittedRegistrations?.find((r) => String(r.id) === s.route.id);
+
+  if (s.route.role !== 'manutencao' || registration?.registration_status !== 'rejected')
+    return (
+      <>
+        <Heading title="Registo indisponível para correção" />
+        <Button onClick={() => s.go('elevadores')}>Voltar aos elevadores</Button>
+      </>
+    );
+
+  return <RegistrationForm registration={registration} />;
+}
+
+function RegistrationForm({ registration }: { registration?: ApiRegistration }) {
+  const s = usePrototype();
   const form = useSubmissionForm({
     dirty: s.dirty,
-    initial: {
-      ownerType: 'Condomínio',
-      ...(registration
-        ? {
-            address: registration.address,
-            postal: registration.postal,
-            parish: registration.parish,
-            owner: registration.owner,
-            nif: registration.nif,
-            email: registration.email,
-            service: registration.service,
-            ownerType: registration.ownerType || 'Condomínio',
-            dge: registration.dge || '',
-            block: registration.block || '',
-            phone: registration.phone || '',
-          }
-        : {}),
-    },
-    initialFile: registration ? s.documents[registration.id] || null : null,
-    initialDocument: registration?.document || '',
+    initial: registration ? toRegistrationValues(registration) : { ownerType: 'Condomínio' },
+    initialDocument: registration?.registration_document ?? '',
   });
+  // Erro da API que não pertence a nenhum campo (ex.: servidor indisponível).
+  const [saveError, setSaveError] = useState('');
   const { values, file, keptDocument, field, upload } = form;
   const parent = 'elevadores';
   const back = () => s.go(parent);
@@ -48,14 +73,7 @@ export function RegisterElevatorForm() {
   function submit(event: FormEvent) {
     form.submit(
       event,
-      () => {
-        const next = validateRegistration(values, file);
-
-        if (values.dge?.trim() && s.elevators.some((e) => e.dge === values.dge.trim()))
-          next.dge = 'Já existe um elevador com este número DGE.';
-
-        return next;
-      },
+      () => validateRegistration(values, file),
       () => {
         void saveRegistration();
       },
@@ -63,51 +81,30 @@ export function RegisterElevatorForm() {
   }
 
   async function saveRegistration() {
-    await form.save(() => {
-      const id = registration?.id || crypto.randomUUID();
-      const changes = registrationChanges(values, file?.name, keptDocument);
-      const next = registration
-        ? resubmitRegistration(s.registrations, registration.id, changes, s.route.role)
-        : [
-            ...s.registrations,
-            {
-              ...changes,
-              id,
-              company: 'Elevar, Lda.',
-              status: 'Por validar',
-              permit:
-                s.urbanNotices.find((notice) => notice.address === changes.address)?.permit || '',
-            },
-          ];
-      s.setRegistrations(next);
-      s.setUrbanNotices((items) => reconcileNotices(items, next));
-      s.setDocuments((documents) => {
-        const nextDocuments = { ...documents };
-        if (file) nextDocuments[id] = file;
-        else if (!keptDocument) delete nextDocuments[id];
-        return nextDocuments;
-      });
-      s.notify(
-        registration
-          ? 'Registo corrigido e novamente submetido para validação.'
-          : 'Registo submetido. Aguarda validação municipal.',
-      );
-    });
-    back();
-  }
+    setSaveError('');
+    try {
+      await form.save(async () => {
+        // Por agora só o nome do documento: o ficheiro espera pelo armazenamento de ficheiros.
+        const body = toRegistrationBody(values, file?.name || keptDocument);
 
-  if (
-    s.route.id &&
-    (registration?.status !== 'Rejeitado' ||
-      registration.company !== 'Elevar, Lda.' ||
-      s.route.role !== 'manutencao')
-  ) {
-    return (
-      <>
-        <Heading title="Registo indisponível para correção" />
-        <Button onClick={() => s.go('elevadores')}>Voltar aos elevadores</Button>
-      </>
-    );
+        if (registration) await correctRegistration(s.route.role, registration.id, body);
+        else await submitRegistration(s.route.role, body);
+        s.reloadSubmittedRegistrations();
+        s.notify(
+          registration
+            ? 'Registo corrigido e novamente submetido para validação.'
+            : 'Registo submetido. Aguarda validação municipal.',
+        );
+      });
+    } catch (error) {
+      const { field, message } = registrationError(error);
+
+      if (field) form.setErrors((errors) => ({ ...errors, [field]: message }));
+      else setSaveError(message);
+
+      return;
+    }
+    back();
   }
 
   return (
@@ -117,14 +114,19 @@ export function RegisterElevatorForm() {
         description="Comunicar um novo elevador ao município."
         onBack={s.route.id ? () => s.back(parent) : undefined}
       />
-      {registration?.reason && (
+      {registration?.rejected_reason && (
         <Banner tone="warning">
-          <strong>Motivo da rejeição anterior:</strong> {registration.reason}
+          <strong>Motivo da rejeição anterior:</strong> {registration.rejected_reason}
         </Banner>
       )}
       <Banner>
         Após a submissão, o município valida o registo e atribui uma referência interna ao elevador.
       </Banner>
+      {saveError && (
+        <div role="alert">
+          <Banner tone="warning">{saveError}</Banner>
+        </div>
+      )}
       <FormShell
         form={form}
         title={title}
