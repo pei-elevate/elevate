@@ -17,13 +17,60 @@ export interface ApiRegistration {
   building: string | null;
   service_date: string;
   registration_document: string | null;
-  owner: { name: string; nif: string; email: string; phone: string | null };
+  dge_number: string | null;
+  owner: {
+    type: OwnerType | null;
+    name: string;
+    nif: string;
+    email: string;
+    phone: string | null;
+  };
   maintenance_company: { name: string };
   permit: PermitSummary | null;
 }
 
+/** Registo que a empresa de manutenção submete, novo ou corrigido (`RegistrationIn`). */
+export interface RegistrationBody {
+  address: string;
+  postal_code: string;
+  parish: string;
+  building: string | null;
+  service_date: string;
+  dge_number: string | null;
+  owner_type: OwnerType;
+  owner_name: string;
+  owner_nif: string;
+  owner_email: string;
+  owner_phone: string | null;
+  registration_document: string | null;
+}
+
 export function listPendingRegistrations(role: Role) {
   return api<ApiRegistration[]>('/registrations', role);
+}
+
+/** Registos da empresa de manutenção que ainda não deram elevador: por validar e rejeitados. */
+export function listSubmittedRegistrations(role: Role) {
+  return api<ApiRegistration[]>('/registrations?status=pending_approval&status=rejected', role);
+}
+
+export function submitRegistration(role: Role, body: RegistrationBody) {
+  return api<ApiRegistration>('/registrations', role, { method: 'POST', body });
+}
+
+/** Volta a submeter um registo rejeitado, depois de corrigido. */
+export function correctRegistration(role: Role, id: number, body: RegistrationBody) {
+  return api<ApiRegistration>(`/registrations/${id}`, role, { method: 'PUT', body });
+}
+
+/** Erro ao submeter: o n.º DGE repetido vai para o seu campo, o resto para o formulário. */
+export function registrationError(error: unknown): { field?: 'dge'; message: string } {
+  if (error instanceof ApiError && error.status === 409 && /DGE/.test(error.message))
+    return { field: 'dge', message: 'Já existe um elevador com este número DGE.' };
+  if (error instanceof ApiError && error.status === 409)
+    return { message: 'Este registo já não pode ser corrigido. A lista foi atualizada.' };
+
+  return { message: 'Não foi possível submeter o registo. Tente novamente.' };
 }
 
 export function approveRegistration(role: Role, id: number, permitId: number | null) {

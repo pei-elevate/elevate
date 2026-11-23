@@ -100,7 +100,9 @@ def test_only_the_municipal_manager_reviews(client: TestClient, pending: Elevato
     headers = {"X-User-Id": role.value}
     url = f"/api/registrations/{pending.id}"
 
-    assert client.get("/api/registrations", headers=headers).status_code == 403
+    # The maintenance company lists its own registrations (tests/test_registration_submission.py).
+    if role != UserRole.MAINTENANCE:
+        assert client.get("/api/registrations", headers=headers).status_code == 403
     assert (
         client.post(f"{url}/approve", headers=headers, json={"permit_id": None}).status_code == 403
     )

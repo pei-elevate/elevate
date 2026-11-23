@@ -1,17 +1,22 @@
 from datetime import date
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session, joinedload
 
-from api.accounts.models import InspectionCompany
+from api.accounts.models import InspectionCompany, Owner
 from api.elevators.models import Elevator, ReferenceCounter, RegistrationStatus
 from api.inspections.models import Inspection, InspectionRequest
 from api.notices.models import Notice
 from api.permits.models import Permit
 
 
-def list_registrations(db: Session, status: RegistrationStatus) -> list[Elevator]:
+def list_registrations(
+    db: Session,
+    statuses: list[RegistrationStatus],
+    maintenance_company_id: int | None = None,
+) -> list[Elevator]:
+    """The registrations in any of the statuses, optionally of one maintenance company."""
     query = (
         select(Elevator)
         .options(
@@ -19,9 +24,11 @@ def list_registrations(db: Session, status: RegistrationStatus) -> list[Elevator
             joinedload(Elevator.maintenance_company),
             joinedload(Elevator.permit),
         )
-        .where(Elevator.registration_status == status)
+        .where(Elevator.registration_status.in_(statuses))
         .order_by(Elevator.created_at, Elevator.id)
     )
+    if maintenance_company_id is not None:
+        query = query.where(Elevator.maintenance_company_id == maintenance_company_id)
     return list(db.scalars(query))
 
 
@@ -37,6 +44,36 @@ def lock_registration(db: Session, elevator_id: int) -> Elevator | None:
 
 def get_permit(db: Session, permit_id: int) -> Permit | None:
     return db.get(Permit, permit_id)
+
+
+def find_permit(db: Session, address: str, postal_code: str) -> Permit | None:
+    """The most recent permit for the same address (ignoring case and spaces at the ends)
+    and postal code."""
+    query = (
+        select(Permit)
+        .where(
+            func.lower(func.trim(Permit.address)) == address.strip().lower(),
+            Permit.postal_code == postal_code,
+        )
+        .order_by(Permit.permit_date.desc(), Permit.id.desc())
+        .limit(1)
+    )
+    return db.scalar(query)
+
+
+def get_owner_by_nif(db: Session, nif: str) -> Owner | None:
+    return db.scalar(select(Owner).where(Owner.nif == nif))
+
+
+def dge_number_in_use(db: Session, dge_number: str, except_id: int | None = None) -> bool:
+    """Whether another elevator, not rejected, already has the DGE number."""
+    query = select(Elevator.id).where(
+        Elevator.dge_number == dge_number,
+        Elevator.registration_status != RegistrationStatus.REJECTED,
+    )
+    if except_id is not None:
+        query = query.where(Elevator.id != except_id)
+    return db.scalar(query.limit(1)) is not None
 
 
 def take_next_number(db: Session, prefix: str) -> int | None:
