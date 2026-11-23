@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
 
 from api.accounts.models import OwnerType
 from api.elevators.models import CertificateStatus, EquipmentType, RegistrationStatus
@@ -45,6 +45,7 @@ class RegistrationOut(OrmSchema):
     internal_reference: str | None
     registration_status: RegistrationStatus
     rejected_reason: str | None
+    dge_number: str | None
 
     equipment_type: EquipmentType
     address: str
@@ -67,6 +68,49 @@ class ApproveRegistration(BaseModel):
 
 class RejectRegistration(BaseModel):
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class RegistrationIn(BaseModel):
+    """An elevator as its maintenance company submits it, new or corrected after a rejection.
+
+    The rules match the registration form (features/elevators/validation.ts).
+    """
+
+    address: Text
+    postal_code: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^\d{4}-\d{3}$")]
+    parish: Text
+    building: str | None = None
+    service_date: date
+    dge_number: str | None = None
+    owner_type: OwnerType
+    owner_name: Text
+    owner_nif: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^\d{9}$")]
+    owner_email: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, pattern=r"^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$"),
+    ]
+    owner_phone: str | None = None
+    # Name of the supporting document (PDF); the file itself waits for the file storage.
+    registration_document: str | None = None
+
+    @field_validator("service_date")
+    @classmethod
+    def not_in_the_future(cls, value: date) -> date:
+        if value > date.today():
+            raise ValueError("The service date cannot be in the future")
+        return value
+
+    @field_validator(
+        "building", "dge_number", "owner_phone", "registration_document", mode="before"
+    )
+    @classmethod
+    def blank_is_none(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
 
 
 class LatestRequestOut(OrmSchema):
