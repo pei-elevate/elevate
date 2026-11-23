@@ -14,6 +14,7 @@ import {
 import {
   listElevators,
   listPendingRegistrations,
+  listSubmittedRegistrations,
   load,
   toElevator,
 } from '@/features/elevators/api';
@@ -94,6 +95,13 @@ function useModel(initialRole: Role) {
   const [pendingRegistrations, setPendingRegistrations] = useState<ApiRegistration[] | null>(null);
   const [pendingError, setPendingError] = useState(false);
   const [pendingReloads, setPendingReloads] = useState(0);
+  // Registos que a empresa de manutenção submeteu e ainda não deram elevador (por validar e
+  // rejeitados), vindos da API. null enquanto carregam.
+  const [submittedRegistrations, setSubmittedRegistrations] = useState<ApiRegistration[] | null>(
+    null,
+  );
+  const [submittedError, setSubmittedError] = useState(false);
+  const [submittedReloads, setSubmittedReloads] = useState(0);
   // Alvarás vindos da API, com o estado calculado no backend: o Urbanismo e o gestor veem
   // os mesmos. null enquanto carregam.
   const [permits, setPermits] = useState<ApiPermit[] | null>(null);
@@ -199,6 +207,19 @@ function useModel(initialRole: Role) {
       cancelled = true;
     };
   }, [route.role, route.page, pendingReloads]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a página e submittedReloads são gatilhos, para voltar a pedir os registos ao mudar de página ou ao tentar de novo
+  useEffect(() => {
+    // Só a empresa de manutenção submete registos.
+    if (route.role !== 'manutencao') return;
+
+    setSubmittedError(false);
+
+    return load(
+      () => listSubmittedRegistrations(route.role),
+      setSubmittedRegistrations,
+      () => setSubmittedError(true),
+    );
+  }, [route.role, route.page, submittedReloads]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: a página e assignedReloads são gatilhos, para voltar a pedir os pedidos ao mudar de página ou ao tentar de novo
   useEffect(() => {
     // Só a empresa de inspeção tem pedidos atribuídos.
@@ -372,6 +393,9 @@ function useModel(initialRole: Role) {
     setPendingRegistrations,
     pendingError,
     reloadPendingRegistrations: () => setPendingReloads((n) => n + 1),
+    submittedRegistrations,
+    submittedError,
+    reloadSubmittedRegistrations: () => setSubmittedReloads((n) => n + 1),
     permits,
     permitsError,
     reloadPermits: () => setPermitsReloads((n) => n + 1),

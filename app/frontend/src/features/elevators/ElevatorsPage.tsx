@@ -1,5 +1,6 @@
 import { ElevatorTable } from '@/features/elevators/ElevatorTable';
 import { ElevatorsState } from '@/features/elevators/ElevatorsState';
+import { registrationStatusLabels } from '@/features/elevators/registration';
 import { defaultElevatorFilters, filterElevators } from '@/features/elevators/rules';
 import type { ElevatorFilters } from '@/features/elevators/types';
 import { Badge } from '@/shared/ui/Badge';
@@ -37,7 +38,8 @@ export function ElevatorsPage() {
       (year === 'Todos' || e.entryDate.startsWith(year)),
   );
   const clear = () => updateFilters(defaultElevatorFilters);
-  const pending = s.registrations.filter((r) => r.company === 'Elevar, Lda.');
+  // Só a empresa de manutenção os tem (o backend devolve apenas os que ela submeteu).
+  const submitted = s.submittedRegistrations ?? [];
 
   return (
     <>
@@ -133,23 +135,24 @@ export function ElevatorsPage() {
           <ElevatorsState error={s.apiElevatorsError} onRetry={s.reloadApiElevators} />
         )}
       </Panel>
-      {!owner && !manager && pending.length > 0 && (
+      {!owner && !manager && submitted.length > 0 && (
         <Panel title="Registos submetidos">
-          {pending.map((r) => (
+          {submitted.map((r) => (
             <div className="pending-row" key={r.id}>
               <div>
                 <strong>{r.address}</strong>
-                <small>{r.owner}</small>
+                <small>{r.owner.name}</small>
               </div>
-              <Badge>{r.status}</Badge>
+              <Badge>{registrationStatusLabels[r.registration_status]}</Badge>
               <span>
-                {r.reason ||
-                  (r.status === 'Por validar'
-                    ? 'A aguardar referência interna'
-                    : 'Registo analisado pelo município')}
+                {r.registration_status === 'rejected'
+                  ? r.rejected_reason
+                  : 'A aguardar referência interna'}
               </span>
-              {r.status === 'Rejeitado' && s.route.role === 'manutencao' && (
-                <Button onClick={() => s.go('registar', r.id)}>Corrigir e voltar a submeter</Button>
+              {r.registration_status === 'rejected' && (
+                <Button onClick={() => s.go('registar', String(r.id))}>
+                  Corrigir e voltar a submeter
+                </Button>
               )}
             </div>
           ))}
