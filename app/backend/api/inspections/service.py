@@ -1,10 +1,24 @@
-"""Inspection requests as each profile sees them."""
+"""Inspection requests as each profile sees them, and scheduling them."""
+
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
 from api.accounts.models import User, UserRole
 from api.inspections import repository
 from api.inspections.models import InspectionRequest, RequestStatus
+
+
+class RequestNotFound(Exception):
+    """No such request, or it belongs to another inspection company."""
+
+
+class RequestNotSchedulable(Exception):
+    """The request is no longer awaiting scheduling."""
+
+
+class ScheduleInPast(Exception):
+    """The date and time chosen have already passed."""
 
 
 def list_assigned_requests(
@@ -48,6 +62,34 @@ def list_requests(
         text=_clean(text),
         with_inspection_company=True,
     )
+
+
+def schedule_request(
+    db: Session, user: User, request_id: int, scheduled_at: datetime, now: datetime
+) -> InspectionRequest:
+    """Set the date and time of a request awaiting scheduling (Schedule Inspections).
+
+    Only the inspection company the request is assigned to can schedule it. Another company's
+    request is reported as not found, so its existence is not revealed. Rescheduling is out of
+    scope for now: a request already scheduled or completed is refused. now is Aveiro's local
+    time, without a time zone, like scheduled_at.
+    """
+    request = repository.get_request_for_update(db, request_id)
+    if (
+        request is None
+        or user.inspection_company_id is None
+        or request.inspection_company_id != user.inspection_company_id
+    ):
+        raise RequestNotFound
+    if request.status != RequestStatus.AWAITING_SCHEDULING:
+        raise RequestNotSchedulable
+    if scheduled_at < now:
+        raise ScheduleInPast
+
+    request.scheduled_at = scheduled_at
+    request.status = RequestStatus.SCHEDULED
+    db.commit()
+    return request
 
 
 def _clean(text: str | None) -> str | None:
