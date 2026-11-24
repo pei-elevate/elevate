@@ -1,5 +1,5 @@
-"""Check Request / Inspection Status: the maintenance company and the municipal manager follow
-the inspection requests (ELEV-55)."""
+"""Check Request / Inspection Status: the owner, the maintenance company and the municipal
+manager follow the inspection requests (ELEV-55)."""
 
 from datetime import date, datetime
 
@@ -22,6 +22,8 @@ URL = "/api/inspections/requests"
 MAINTENANCE_A = {"X-User-Id": "maintenance-a"}
 MAINTENANCE_B = {"X-User-Id": "maintenance-b"}
 MANAGER = {"X-User-Id": "manager"}
+OWNER_A = {"X-User-Id": "owner-a"}
+OWNER_B = {"X-User-Id": "owner-b"}
 
 
 @pytest.fixture
@@ -73,9 +75,24 @@ def inspection_company(db: Session) -> InspectionCompany:
 
 @pytest.fixture
 def elevators(db: Session, maintenance_companies: list[MaintenanceCompany]) -> list[Elevator]:
-    owner = Owner(name="Condomínio Gravito 18", nif="900000001", email="owner@ex.pt")
-    db.add(owner)
+    owners = [
+        Owner(name="Condomínio Gravito 18", nif="900000001", email="owner-a@ex.pt"),
+        Owner(name="Condomínio Viseu 30", nif="900000002", email="owner-b@ex.pt"),
+    ]
+    db.add_all(owners)
     db.flush()
+    db.add_all(
+        [
+            User(
+                external_id=external_id,
+                name=external_id,
+                email=f"{external_id}@ex.pt",
+                role=UserRole.OWNER,
+                owner_id=owner.id,
+            )
+            for external_id, owner in zip(["owner-a", "owner-b"], owners, strict=True)
+        ]
+    )
     a, b = maintenance_companies
     elevators = [
         Elevator(
@@ -88,10 +105,10 @@ def elevators(db: Session, maintenance_companies: list[MaintenanceCompany]) -> l
             service_date=date(2020, 1, 1),
             dge_number=f"DGE-10{reference[-3:]}",
         )
-        for reference, address, company in [
-            ("01.05.0203", "Rua do Gravito 18", a),
-            ("01.05.0154", "Avenida Lourenço Peixinho 50", a),
-            ("01.05.0112", "Rua de Viseu 30", b),
+        for reference, address, company, owner in [
+            ("01.05.0203", "Rua do Gravito 18", a, owners[0]),
+            ("01.05.0154", "Avenida Lourenço Peixinho 50", a, owners[0]),
+            ("01.05.0112", "Rua de Viseu 30", b, owners[1]),
         ]
     ]
     db.add_all(elevators)
@@ -176,7 +193,7 @@ def test_requires_a_user(client: TestClient, requests):
     assert client.get(URL, headers={"X-User-Id": "unknown"}).status_code == 401
 
 
-@pytest.mark.parametrize("role", [UserRole.OWNER, UserRole.URBAN_PLANNING, UserRole.INSPECTION])
+@pytest.mark.parametrize("role", [UserRole.URBAN_PLANNING, UserRole.INSPECTION])
 def test_other_profiles_may_not_see_it(client: TestClient, db: Session, requests, role):
     db.add(User(external_id="other", name="other", email="other@ex.pt", role=role))
     db.flush()
@@ -282,9 +299,9 @@ def test_a_maintenance_user_without_a_company_sees_nothing(
 
 
 def test_the_service_gives_other_profiles_nothing(db: Session, requests):
-    owner = User(external_id="o", name="o", email="o@ex.pt", role=UserRole.OWNER)
+    planner = User(external_id="u", name="u", email="u@ex.pt", role=UserRole.URBAN_PLANNING)
 
-    assert service.list_requests(db, owner) == []
+    assert service.list_requests(db, planner) == []
 
 
 @pytest.mark.parametrize(
@@ -296,3 +313,43 @@ def test_the_service_gives_other_profiles_nothing(db: Session, requests):
 )
 def test_open_leaves_out_the_completed_ones(client: TestClient, requests, headers, expected):
     assert numbers(client.get(URL, headers=headers, params={"open": "true"})) == expected
+
+
+def test_an_owner_only_sees_their_elevators(client: TestClient, requests):
+    assert numbers(client.get(URL, headers=OWNER_A)) == ["2026/0377", "2026/0341", "2025/0118"]
+    assert numbers(client.get(URL, headers=OWNER_B)) == ["2026/0400"]
+
+
+def test_an_owner_sees_when_the_inspection_is_and_its_result(client: TestClient, requests):
+    scheduled, completed = client.get(URL, headers=OWNER_A).json()[1:]
+
+    # When the inspection will occur, and who comes.
+    assert scheduled["status"] == "scheduled"
+    assert scheduled["scheduled_at"] == "2026-11-19T10:00:00"
+    assert scheduled["inspection_company"]["name"] == "Inspeave, Lda."
+    # The official result, once submitted.
+    assert completed["status"] == "completed"
+    assert completed["inspection"]["result"] == "failed"
+    assert completed["inspection"]["correction_deadline"] == "2025-04-02"
+
+
+def test_an_owner_user_without_an_owner_sees_nothing(client: TestClient, db: Session, requests):
+    db.add(User(external_id="new", name="new", email="new@ex.pt", role=UserRole.OWNER))
+    db.flush()
+
+    assert numbers(client.get(URL, headers={"X-User-Id": "new"})) == []
+
+
+def test_recent_gives_the_newest_first_with_their_result(client: TestClient, requests):
+    response = client.get(URL, headers=MANAGER, params={"recent": 3})
+
+    # Newest submitted first, completed ones included, so the dashboard shows the result.
+    assert numbers(response) == ["2026/0377", "2026/0400", "2026/0341"]
+    owner = client.get(URL, headers=OWNER_A, params={"recent": 5}).json()
+    assert [r["process_number"] for r in owner] == ["2026/0377", "2026/0341", "2025/0118"]
+    assert owner[2]["inspection"]["result"] == "failed"
+
+
+@pytest.mark.parametrize("recent", [0, 51])
+def test_recent_is_bounded(client: TestClient, requests, recent):
+    assert client.get(URL, headers=MANAGER, params={"recent": recent}).status_code == 422

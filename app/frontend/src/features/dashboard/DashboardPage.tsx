@@ -2,10 +2,12 @@ import { InspectionCalendar } from '@/features/dashboard/InspectionCalendar';
 import { RequestCard } from '@/features/dashboard/RequestCard';
 import { ElevatorTable } from '@/features/elevators/ElevatorTable';
 import { ElevatorsState } from '@/features/elevators/ElevatorsState';
+import { RecentRequests, RecentRequestsState } from '@/features/inspections/RecentRequests';
 import { noticeModal } from '@/features/notices/noticeModal';
 import { localToday } from '@/shared/lib/dates';
 import { Banner } from '@/shared/ui/Banner';
 import { Button } from '@/shared/ui/Button';
+import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
 import { Metric } from '@/shared/ui/Metric';
@@ -147,15 +149,19 @@ export function DashboardPage() {
           <ElevatorTable items={owner ? items : items.slice(0, 5)} compact={!owner} />
         )}
       </Panel>
-      {owner && (
-        <div className="request-cards">
-          {s.requests
-            .filter((r) => items.some((e) => e.id === r.elevator))
-            .map((r) => (
+      {/* Os pedidos de inspeção vêm da API: o estado, a data marcada e o resultado (ELEV-55). */}
+      {owner &&
+        (!s.recentRequests || s.recentError ? (
+          <RecentRequestsState />
+        ) : (
+          <div className="request-cards">
+            {s.recentRequests.map((r) => (
               <RequestCard key={r.id} request={r} />
             ))}
-        </div>
-      )}
+            {!s.recentRequests.length && <Empty>Ainda não há pedidos de inspeção.</Empty>}
+          </div>
+        ))}
+      {!owner && <RecentRequests page="pedidos" />}
     </>
   );
 }

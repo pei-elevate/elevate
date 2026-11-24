@@ -14,7 +14,10 @@ router = APIRouter(prefix="/inspections", tags=["inspections"])
 
 Db = Annotated[Session, Depends(get_db)]
 InspectionUser = Annotated[User, Depends(require_role(UserRole.INSPECTION))]
-Follower = Annotated[User, Depends(require_role(UserRole.MAINTENANCE, UserRole.MUNICIPAL_MANAGER))]
+Follower = Annotated[
+    User,
+    Depends(require_role(UserRole.OWNER, UserRole.MAINTENANCE, UserRole.MUNICIPAL_MANAGER)),
+]
 Status = Annotated[RequestStatus | None, Query(alias="status")]
 Text = Annotated[str | None, Query(max_length=100)]
 
@@ -34,8 +37,10 @@ def list_requests(
     request_status: Status = None,
     q: Text = None,
     only_open: Annotated[bool, Query(alias="open")] = False,
+    recent: Annotated[int | None, Query(ge=1, le=50)] = None,
 ) -> list[InspectionRequest]:
-    """Requests and their status: a maintenance company's elevators, or all of them for the
-    municipal manager (Check Request / Inspection Status). open=true leaves out the
-    completed ones."""
-    return service.list_requests(db, user, request_status, q, only_open)
+    """Requests and their status (Check Request / Inspection Status): an owner's elevators,
+    a maintenance company's, or all of them for the municipal manager. open=true leaves out
+    the completed ones; recent=N gives the N most recently submitted, newest first, for the
+    dashboard."""
+    return service.list_requests(db, user, request_status, q, only_open, recent)
