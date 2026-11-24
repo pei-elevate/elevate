@@ -14,8 +14,6 @@ function Interface() {
   const [menu, setMenu] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const { role, page } = s.route;
-  const rescheduling =
-    page === 'agendar' && s.requests.find((r) => r.id === s.route.id)?.status === 'Agendado';
   const names: Record<Role, string> = {
     proprietario: 'Condomínio Edifício Ria',
     manutencao: 'Elevar, Lda.',
@@ -120,12 +118,11 @@ function Interface() {
         <nav aria-label="Navegação principal">
           {navigation[role].map(([slug, label, icon]) => {
             const active =
-              (page === slug && !rescheduling) ||
+              page === slug ||
               ((page === 'detalhes' || page === 'historico') &&
                 (slug === 'elevadores' || slug === 'cadastro')) ||
-              // Reagendar e submeter resultado partem das inspeções atribuídas.
-              ((page === 'resultado' || (page === 'agendar' && rescheduling)) &&
-                slug === 'atribuidas') ||
+              // Submeter resultado parte das inspeções atribuídas.
+              (page === 'resultado' && slug === 'atribuidas') ||
               (page === 'reclamacao' && slug === 'reclamacoes');
             return (
               <button

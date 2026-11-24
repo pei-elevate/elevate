@@ -69,17 +69,24 @@ const assigned = [
   }),
 ];
 
-/** Responde aos pedidos atribuídos com `answer` (lista ou código de erro); o resto, vazio. */
-function stubApi(answer) {
-  const fetch = vi.fn(async (url) => {
+/** Responde aos pedidos atribuídos com `answer` (lista ou código de erro) e ao agendamento com
+ * `scheduled` (código de resposta); o resto, vazio. */
+function stubApi(answer, scheduled = () => 200) {
+  const fetch = vi.fn(async (url, init = {}) => {
+    const json = (status, body) => new Response(JSON.stringify(body), { status });
+
+    if (init.method === 'POST' && /\/schedule$/.test(String(url))) {
+      const status = scheduled();
+      return status < 300 ? json(status, apiRequest({ status: 'scheduled' })) : json(status, {});
+    }
     const value = String(url) === '/api/inspections/assigned' ? answer() : [];
-    return typeof value === 'number'
-      ? new Response('{}', { status: value })
-      : new Response(JSON.stringify(value), { status: 200 });
+    return typeof value === 'number' ? json(value, {}) : json(200, value);
   });
   vi.stubGlobal('fetch', fetch);
   return fetch;
 }
+
+const posts = (fetch) => fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
 
 async function settle() {
   for (let i = 0; i < 4; i++)
@@ -99,6 +106,37 @@ async function mount(role, path) {
 }
 
 const main = () => document.querySelector('main').textContent;
+const page = () => document.body.textContent;
+
+/** Espera até `check` deixar de falhar (a gravação espera um pouco e vai à API). */
+async function until(check, timeout = 2000) {
+  const start = Date.now();
+  for (;;) {
+    try {
+      return check();
+    } catch (error) {
+      if (Date.now() - start > timeout) throw error;
+      await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    }
+  }
+}
+
+/** Escreve num campo como o utilizador, para o React ver a alteração. */
+function type(name, value) {
+  const input = document.querySelector(`[name="${name}"]`);
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+async function scheduleFor(date, time) {
+  await act(async () => {
+    type('date', date);
+    type('time', time);
+  });
+  await act(async () => {
+    document.querySelector('main form').requestSubmit();
+  });
+}
 const rows = () => [...document.querySelectorAll('main tbody tr')];
 const badge = (label) =>
   [...document.querySelectorAll('nav .nav-item')]
@@ -187,4 +225,85 @@ test('se a API falhar, a lista para agendar deixa tentar de novo', async () => {
 
   assert.equal(rows().length, 2);
   assert.ok(fetch.mock.calls.length >= 2);
+});
+
+test('agendar grava na API e o pedido sai da lista', async () => {
+  let list = assigned;
+  const fetch = stubApi(() => list);
+  const router = await mount('inspecao', '/agendar/2026%2F0401');
+
+  // Um pedido vindo do MyDoc abre o formulário, com os dados da API.
+  assert.match(main(), /Agendar inspeção/);
+  assert.match(main(), /Rua João Mendonça 5/);
+
+  list = assigned.map((r) =>
+    r.id === 9 ? { ...r, status: 'scheduled', scheduled_at: '2030-12-02T10:00:00' } : r,
+  );
+  await scheduleFor('02/12/2030', '10:00');
+
+  await until(() => assert.equal(router.state.location.pathname, '/agendar'));
+  const [[url, init]] = posts(fetch);
+  assert.equal(url, '/api/inspections/requests/9/schedule');
+  assert.deepEqual(JSON.parse(init.body), { scheduled_at: '2030-12-02T10:00' });
+  assert.match(page(), /Inspeção agendada/);
+  // A lista volta a ser pedida e o pedido agendado já não está por agendar.
+  await until(() => assert.doesNotMatch(main(), /2026\/0401/));
+  assert.equal(badge('Agendar inspeções'), '1');
+});
+
+test('um 409 deixa o formulário aberto com a mensagem', async () => {
+  const fetch = stubApi(
+    () => assigned,
+    () => 409,
+  );
+  const router = await mount('inspecao', '/agendar/2026%2F0401');
+
+  await scheduleFor('02/12/2030', '10:00');
+
+  await until(() =>
+    assert.match(
+      document.querySelector('[role="alert"]')?.textContent ?? '',
+      /Este pedido já foi agendado ou concluído\. Atualize a lista\./,
+    ),
+  );
+  assert.equal(posts(fetch).length, 1);
+  assert.equal(router.state.location.pathname, '/agendar/2026%2F0401');
+});
+
+test('uma data no passado não chega à API', async () => {
+  const fetch = stubApi(() => assigned);
+  await mount('inspecao', '/agendar/2026%2F0401');
+
+  await scheduleFor('01/01/2020', '10:00');
+
+  assert.match(main(), /Escolha a data de hoje ou uma data futura/);
+  assert.equal(posts(fetch).length, 0);
+});
+
+test('um pedido já agendado não abre o formulário', async () => {
+  stubApi(() => assigned);
+  await mount('inspecao', '/agendar/2026%2F0341');
+
+  assert.match(main(), /Ação indisponível/);
+  assert.equal(document.querySelector('main form'), null);
+});
+
+test('o formulário não mostra dados do proprietário', async () => {
+  // A API não dá à empresa de inspeção dados do proprietário (decisão D1).
+  stubApi(() => assigned);
+  await mount('inspecao', '/agendar/2026%2F0401');
+
+  assert.doesNotMatch(main(), /Válido até/);
+  assert.match(main(), /Proprietário do elevador/);
+  assert.match(main(), /Elevar, Lda\. — manutenção/);
+});
+
+test('as inspeções atribuídas não oferecem reagendar', async () => {
+  stubApi(() => assigned);
+  await mount('inspecao', '/atribuidas');
+
+  assert.match(main(), /2026\/0341/);
+  const buttons = [...document.querySelectorAll('main button')].map((b) => b.textContent);
+  assert.ok(!buttons.includes('Reagendar'));
+  assert.ok(buttons.includes('Submeter resultado'));
 });

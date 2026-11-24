@@ -80,13 +80,11 @@ export function RequestTable({
                         Agendar
                       </Button>
                     ) : r.status === 'Agendado' ? (
+                      // Reagendar fica para mais tarde: quem pede a nova data ainda está por decidir.
                       <div className="row-actions">
                         <Button className="primary small" onClick={() => s.go('resultado', r.id)}>
                           Submeter resultado
                         </Button>
-                        <button className="text-button" onClick={() => s.go('agendar', r.id)}>
-                          Reagendar
-                        </button>
                       </div>
                     ) : (
                       r.status === 'Concluído' && (

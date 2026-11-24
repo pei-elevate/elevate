@@ -33,9 +33,9 @@ test('ecrãs e rotas do protótipo', async () => {
     ['gestor', '/pedidos', 'Pedidos de inspeção'],
     ['gestor', '/reprovadas', 'Inspeções reprovadas'],
     ['inspecao', '/atribuidas', 'Inspeções atribuídas'],
-    ['inspecao', '/agendar/2026%2F0377', 'Agendar inspeção'],
+    // O formulário procura o pedido nos atribuídos da API, que este render não chega a pedir.
+    ['inspecao', '/agendar/2026%2F0377', 'A carregar pedido…'],
     ['inspecao', '/resultado/2026%2F0341', 'Submeter resultado da inspeção'],
-    ['inspecao', '/agendar/2026%2F0341', 'Reagendar inspeção'],
     ['urbanismo', '/avisos', 'Alvarás registados'],
     ['inspecao', '/agendar', 'Agendar inspeções'],
     ['inspecao', '/concluidas', 'Página não encontrada'],
