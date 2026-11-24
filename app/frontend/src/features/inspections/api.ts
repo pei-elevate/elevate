@@ -70,6 +70,41 @@ export function scheduleError(error: unknown): string {
   return 'Não foi possível agendar a inspeção. Tente novamente.';
 }
 
+/** Valores do formulário do resultado, com as datas já em AAAA-MM-DD. */
+export type ResultValues = Record<string, string>;
+
+/**
+ * Submete o resultado e o PDF de um pedido agendado (`key` é o id da API). Só vão os campos
+ * do resultado escolhido: a validade se aprovada, o prazo e as não conformidades se reprovada.
+ */
+export function submitResult(role: Role, key: number, values: ResultValues, report: File) {
+  const approved = values.result === 'Aprovada';
+  const body = new FormData();
+  body.append('result', approved ? 'approved' : 'failed');
+  body.append('performed_date', values.performed);
+  if (approved) body.append('valid_until', values.validUntil);
+  else {
+    body.append('correction_deadline', values.deadline);
+    body.append('nonconformities', values.nonconformities ?? '');
+  }
+  body.append('report', report);
+
+  return api<ApiAssignedRequest>(`/inspections/requests/${key}/result`, role, {
+    method: 'POST',
+    body,
+  });
+}
+
+/** Mensagem a mostrar quando a submissão do resultado falha. */
+export function resultError(error: unknown): string {
+  if (error instanceof ApiError && error.status === 409)
+    return 'Este pedido já não está agendado: pode já ter resultado. Atualize a lista.';
+  if (error instanceof ApiError && error.status === 422)
+    return 'Verifique os dados do resultado e o PDF (até 10 MB).';
+
+  return 'Não foi possível submeter o resultado. Tente novamente.';
+}
+
 /**
  * Pedidos em aberto da empresa de manutenção (os dos seus elevadores) ou do gestor (todos).
  * Os concluídos ficam no histórico de cada elevador, por isso não se pedem.

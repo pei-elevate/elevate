@@ -21,19 +21,24 @@ export class ApiError extends Error {
   }
 }
 
-/** Pedido ao backend (`/api…`) em nome do perfil. Respostas fora de 2xx lançam `ApiError`. */
+/**
+ * Pedido ao backend (`/api…`) em nome do perfil. Respostas fora de 2xx lançam `ApiError`.
+ * Um corpo `FormData` (com ficheiros) segue tal como está, e o browser põe o Content-Type
+ * multipart; qualquer outro vai em JSON.
+ */
 export async function api<T>(
   path: string,
   role: Role,
   { method = 'GET', body }: { method?: string; body?: unknown } = {},
 ): Promise<T> {
+  const form = body instanceof FormData;
   const response = await fetch(`/api${path}`, {
     method,
     headers: {
       'X-User-Id': seedUsers[role],
-      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(body === undefined || form ? {} : { 'Content-Type': 'application/json' }),
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : form ? body : JSON.stringify(body),
   });
 
   if (!response.ok) {

@@ -8,15 +8,6 @@ import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
 import { Summary } from '@/shared/ui/Summary';
 
-/** Pedido de inspeção indicado no endereço e o respetivo elevador. */
-export function useInspectionRequest() {
-  const s = usePrototype();
-  const request = s.requests.find((r) => r.id === s.route.id);
-  const elevator = s.elevators.find((e) => e.id === request?.elevator);
-
-  return { request, elevator };
-}
-
 /**
  * Pedido indicado no endereço, entre os atribuídos à empresa de inspeção que vieram da API.
  * loading enquanto a lista ainda não chegou.
