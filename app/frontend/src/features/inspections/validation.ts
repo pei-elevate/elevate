@@ -1,6 +1,6 @@
 import type { Upload, Values } from '@/shared/forms/types';
 import { requiredIn, validateDateFields, validateDocument } from '@/shared/forms/validation';
-import { localToday } from '@/shared/lib/dates';
+import { isTime, localToday } from '@/shared/lib/dates';
 
 export function validateSchedule(v: Values, file: Upload | null, today = localToday()) {
   const errors: Values = {};
@@ -9,6 +9,8 @@ export function validateSchedule(v: Values, file: Upload | null, today = localTo
   required('time', 'a hora');
 
   if (v.date && v.date < today) errors.date = 'Escolha a data de hoje ou uma data futura.';
+
+  if (v.time && !isTime(v.time)) errors.time = 'Indique uma hora válida no formato HH:MM.';
 
   validateDocument(file, errors);
   validateDateFields(v, ['date'], errors);

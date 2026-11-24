@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
 import type { Values } from '@/shared/forms/types';
-import { formatDate, isISODate, parseDateInput } from '@/shared/lib/dates';
+import { formatDate, isISODate, maskDate, maskTime, parseDateInput } from '@/shared/lib/dates';
 
 type FieldOptions = {
   type?: string;
@@ -51,6 +51,7 @@ export function useSubmissionForm({
 
   const field: FieldRenderer = (name, label, options = {}) => {
     const date = options.type === 'date';
+    const time = options.type === 'time';
     const hint = date
       ? [
           'Formato DD/MM/YYYY.',
@@ -59,7 +60,9 @@ export function useSubmissionForm({
         ]
           .filter(Boolean)
           .join(' ')
-      : options.hint;
+      : time
+        ? 'Formato HH:MM (24 horas).'
+        : options.hint;
     const props = {
       id: name,
       name,
@@ -96,8 +99,21 @@ export function useSubmissionForm({
             type="text"
             placeholder="DD/MM/YYYY"
             maxLength={10}
+            inputMode="numeric"
             value={isISODate(values[name] || '') ? formatDate(values[name]) : values[name] || ''}
-            onChange={(e) => change(name, parseDateInput(e.target.value) || e.target.value)}
+            onChange={(e) => {
+              const typed = maskDate(e.target.value);
+              change(name, parseDateInput(typed) || typed);
+            }}
+          />
+        ) : time ? (
+          <input
+            {...props}
+            type="text"
+            placeholder="HH:MM"
+            maxLength={5}
+            inputMode="numeric"
+            onChange={(e) => change(name, maskTime(e.target.value))}
           />
         ) : (
           <input

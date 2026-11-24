@@ -9,6 +9,8 @@ import { afterEach, beforeAll, test, vi } from 'vitest';
 import { createRoutes } from '@/app/App';
 import { scheduleError, scheduleRequest } from '@/features/inspections/api';
 import { ApiError } from '@/shared/api/client';
+import { validateSchedule } from '@/features/inspections/validation';
+import { maskDate, maskTime } from '@/shared/lib/dates';
 
 beforeAll(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -306,4 +308,70 @@ test('as inspeções atribuídas não oferecem reagendar', async () => {
   const buttons = [...document.querySelectorAll('main button')].map((b) => b.textContent);
   assert.ok(!buttons.includes('Reagendar'));
   assert.ok(buttons.includes('Submeter resultado'));
+});
+
+test('a data ganha as barras enquanto se escrevem os números', () => {
+  assert.equal(maskDate('1'), '1');
+  assert.equal(maskDate('15'), '15');
+  assert.equal(maskDate('151'), '15/1');
+  assert.equal(maskDate('1512'), '15/12');
+  assert.equal(maskDate('15122'), '15/12/2');
+  assert.equal(maskDate('15122030'), '15/12/2030');
+  // Já com barras (colado ou escrito à mão), fica igual.
+  assert.equal(maskDate('15/12/2030'), '15/12/2030');
+  // Apagar a barra apaga-a mesmo, em vez de ela voltar logo.
+  assert.equal(maskDate('15/'), '15');
+  // Letras e números a mais ficam de fora.
+  assert.equal(maskDate('15a12b2030'), '15/12/2030');
+  assert.equal(maskDate('151220301'), '15/12/2030');
+  assert.equal(maskDate(''), '');
+});
+
+test('no formulário basta escrever os números da data', async () => {
+  const fetch = stubApi(() => assigned);
+  await mount('inspecao', '/agendar/2026%2F0401');
+
+  await scheduleFor('02122030', '10:00');
+
+  const input = document.querySelector('[name="date"]');
+  assert.equal(input.inputMode, 'numeric');
+  await until(() => assert.equal(posts(fetch).length, 1));
+  assert.deepEqual(JSON.parse(posts(fetch)[0][1].body), { scheduled_at: '2030-12-02T10:00' });
+});
+
+test('a hora ganha os dois pontos enquanto se escrevem os números', () => {
+  assert.equal(maskTime('1'), '1');
+  assert.equal(maskTime('14'), '14');
+  assert.equal(maskTime('143'), '14:3');
+  assert.equal(maskTime('1430'), '14:30');
+  assert.equal(maskTime('14:30'), '14:30');
+  // Apagar os dois pontos apaga-os mesmo.
+  assert.equal(maskTime('14:'), '14');
+  assert.equal(maskTime('14h30'), '14:30');
+  assert.equal(maskTime('14305'), '14:30');
+  assert.equal(maskTime(''), '');
+});
+
+test('uma hora inválida não passa a validação', () => {
+  const ok = { date: '2030-12-02', time: '14:30' };
+  assert.equal(validateSchedule(ok, null, '2026-11-24').time, undefined);
+  for (const time of ['25:00', '14:60', '9:30', '14'])
+    assert.equal(
+      validateSchedule({ ...ok, time }, null, '2026-11-24').time,
+      'Indique uma hora válida no formato HH:MM.',
+      time,
+    );
+});
+
+test('no formulário basta escrever os números da hora', async () => {
+  const fetch = stubApi(() => assigned);
+  await mount('inspecao', '/agendar/2026%2F0401');
+
+  await scheduleFor('02122030', '1430');
+
+  const input = document.querySelector('[name="time"]');
+  assert.equal(input.type, 'text');
+  assert.equal(input.inputMode, 'numeric');
+  await until(() => assert.equal(posts(fetch).length, 1));
+  assert.deepEqual(JSON.parse(posts(fetch)[0][1].body), { scheduled_at: '2030-12-02T14:30' });
 });
