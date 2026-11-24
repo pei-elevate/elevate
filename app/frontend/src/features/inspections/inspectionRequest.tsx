@@ -18,13 +18,23 @@ export function useInspectionRequest() {
 }
 
 /**
+ * Pedido indicado no endereço, entre os atribuídos à empresa de inspeção que vieram da API.
+ * loading enquanto a lista ainda não chegou.
+ */
+export function useAssignedRequest() {
+  const s = usePrototype();
+  const request = s.assignedRequests?.find((r) => r.id === s.route.id);
+
+  return { request, loading: !s.assignedRequests && !s.assignedError };
+}
+
+/**
  * Ecrã a mostrar quando o pedido não pode ser tratado: perfil errado, pedido inexistente ou
  * estado já alterado. Devolve null quando o formulário pode ser mostrado.
  */
 export function requestUnavailable(
   role: string,
   request: Request | undefined,
-  elevator: Elevator | undefined,
   allowed: (status: string) => boolean,
   go: (page: string) => void,
 ): ReactNode | null {
@@ -37,7 +47,7 @@ export function requestUnavailable(
     );
   }
 
-  if (!request || !elevator)
+  if (!request)
     return (
       <>
         <Heading title="Pedido não encontrado" />
@@ -75,26 +85,29 @@ export function RequestBreadcrumb({
   );
 }
 
-/** Painel «Dados do pedido», comum ao agendamento e ao resultado. */
+/**
+ * Painel «Dados do pedido», comum ao agendamento e ao resultado. Sem elevador (pedidos da API),
+ * usa os dados que vêm com o pedido.
+ */
 export function RequestSummary({
   request,
   elevator,
-  extra,
+  extra = [],
 }: {
   request: Request;
-  elevator: Elevator;
-  extra: [string, string][];
+  elevator?: Elevator;
+  extra?: [string, string][];
 }) {
   return (
     <Panel title="Dados do pedido">
       <Summary
         items={[
           ['N.º de processo', request.id],
-          ['Referência interna', elevator.id],
-          ['N.º DGE', elevator.dge],
-          ['Morada', elevator.address],
+          ['Referência interna', elevator?.id ?? request.elevator],
+          ['N.º DGE', elevator?.dge ?? request.dge ?? '—'],
+          ['Morada', elevator?.address ?? request.address ?? '—'],
           ['Âmbito', request.scope],
-          ['Empresa de manutenção', elevator.company],
+          ['Empresa de manutenção', elevator?.company ?? request.company ?? '—'],
           ...extra,
         ]}
       />

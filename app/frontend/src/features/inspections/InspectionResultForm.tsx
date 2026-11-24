@@ -92,10 +92,10 @@ export function InspectionResultForm() {
     back();
   }
 
+  // Sem o elevador nos dados de exemplo, o pedido não pode ser tratado aqui.
   const unavailable = requestUnavailable(
     s.route.role,
-    request,
-    elevator,
+    elevator ? request : undefined,
     (status) => status === 'Agendado',
     s.go,
   );

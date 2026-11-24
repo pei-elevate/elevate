@@ -1,9 +1,12 @@
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from api.elevators.models import EquipmentType
 from api.inspections.models import InspectionResult, RequestStatus, RequestType
+
+LOCAL_TIME = ZoneInfo("Europe/Lisbon")
 
 
 class OrmSchema(BaseModel):
@@ -67,3 +70,16 @@ class RequestStatusOut(RequestOut):
 
     elevator: TrackedElevator
     inspection_company: CompanyContact
+
+
+class ScheduleRequest(BaseModel):
+    """The date and time the inspection company sets for a request (Schedule Inspections)."""
+
+    scheduled_at: datetime
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def local_time(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(LOCAL_TIME).replace(tzinfo=None)

@@ -68,3 +68,9 @@ def list_requests(
 def _escape_like(text: str) -> str:
     """So that % and _ typed by the user are searched for, not used as wildcards."""
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def get_request_for_update(db: Session, request_id: int) -> InspectionRequest | None:
+    """The request, locked until the transaction ends, so two people scheduling it at the same
+    time cannot both see it awaiting scheduling."""
+    return db.get(InspectionRequest, request_id, with_for_update=True, populate_existing=True)

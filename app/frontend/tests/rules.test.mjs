@@ -11,7 +11,6 @@ import { validatePermit } from '@/features/permits/validation';
 import * as elevatorsMocks from '@/features/elevators/mocks';
 import * as elevatorsRules from '@/features/elevators/rules';
 import * as inspectionsMocks from '@/features/inspections/mocks';
-import * as inspectionsRules from '@/features/inspections/rules';
 import * as complaintsMocks from '@/features/complaints/mocks';
 import * as complaintsRules from '@/features/complaints/rules';
 import * as permitsMocks from '@/features/permits/mocks';
@@ -39,7 +38,6 @@ const data = {
   ...elevatorsMocks,
   ...elevatorsRules,
   ...inspectionsMocks,
-  ...inspectionsRules,
   ...complaintsMocks,
   ...complaintsRules,
   ...permitsMocks,
@@ -362,29 +360,7 @@ test('regras do protótipo', () => {
       .status,
     'Aberta',
   );
-  assert.equal(typeof data.updateSchedule, 'function');
-  const rescheduled = data.updateSchedule(
-    data.requests,
-    '2026/0341',
-    { date: '2026-11-02', time: '14:30' },
-    'inspecao',
-  );
-  assert.equal(rescheduled.find((r) => r.id === '2026/0341').scheduled, '2026-11-02T14:30');
-  assert.equal(
-    data
-      .updateSchedule(data.requests, '2025/0118', { date: '2026-11-02', time: '14:30' }, 'inspecao')
-      .find((r) => r.id === '2025/0118').scheduled,
-    '2025-03-03T10:00',
-  );
-  assert.equal(
-    data
-      .updateSchedule(data.requests, '2026/0341', { date: '2026-11-02', time: '14:30' }, 'gestor')
-      .find((r) => r.id === '2026/0341').scheduled,
-    '2026-11-19T10:00',
-  );
-  console.log(
-    'Regressões da auditoria: validade, reapresentação, permissões EMA e reagendamento: OK',
-  );
+  console.log('Regressões da auditoria: validade, reapresentação e permissões EMA: OK');
 });
 
 test('rótulos e contagens dos alvarás', () => {

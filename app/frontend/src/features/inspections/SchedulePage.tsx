@@ -1,12 +1,15 @@
 import { RequestTable } from '@/features/inspections/RequestTable';
+import { Banner } from '@/shared/ui/Banner';
+import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
 import { usePrototype } from '@/app/state';
 
-// Ponto de partida do menu «Agendar»: os pedidos que ainda não têm data.
+// Ponto de partida do menu «Agendar»: os pedidos atribuídos (da API) que ainda não têm data.
 export function SchedulePage() {
   const s = usePrototype();
-  const items = s.requests.filter((r) => r.status === 'Por agendar');
+  const loading = !s.assignedRequests && !s.assignedError;
+  const items = (s.assignedRequests ?? []).filter((r) => r.status === 'Por agendar');
 
   return (
     <>
@@ -14,8 +17,20 @@ export function SchedulePage() {
         title="Agendar inspeções"
         description="Escolha um pedido e defina a data e a hora da inspeção."
       />
+      {s.assignedError && (
+        <Banner
+          tone="warning"
+          action={<Button onClick={s.reloadAssignedRequests}>Tentar novamente</Button>}
+        >
+          Não foi possível carregar os pedidos atribuídos.
+        </Banner>
+      )}
       <Panel>
-        <RequestTable items={items} assigned />
+        {loading ? (
+          <p role="status">A carregar pedidos…</p>
+        ) : (
+          <RequestTable items={items} assigned />
+        )}
         <div className="panel-footer">
           <span>{items.length} pedido(s)</span>
         </div>

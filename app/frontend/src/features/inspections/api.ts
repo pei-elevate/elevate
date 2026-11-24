@@ -1,5 +1,5 @@
 import type { Request } from '@/features/inspections/types';
-import { api } from '@/shared/api/client';
+import { ApiError, api } from '@/shared/api/client';
 import type { Role } from '@/shared/auth/roles';
 
 /** Pedido atribuído à empresa de inspeção, como o backend o devolve (`AssignedRequestOut`). */
@@ -50,6 +50,24 @@ export const results: Record<'approved' | 'failed', string> = {
 
 export function listAssignedRequests(role: Role) {
   return api<ApiAssignedRequest[]>('/inspections/assigned', role);
+}
+
+/** Agenda um pedido por agendar: `scheduledAt` é a data e hora locais, sem fuso (2026-12-02T10:00). */
+export function scheduleRequest(role: Role, key: number, scheduledAt: string) {
+  return api<ApiAssignedRequest>(`/inspections/requests/${key}/schedule`, role, {
+    method: 'POST',
+    body: { scheduled_at: scheduledAt },
+  });
+}
+
+/** Mensagem a mostrar quando o agendamento falha. */
+export function scheduleError(error: unknown): string {
+  if (error instanceof ApiError && error.status === 409)
+    return 'Este pedido já foi agendado ou concluído. Atualize a lista.';
+  if (error instanceof ApiError && error.status === 422)
+    return 'Escolha a data de hoje ou uma data futura.';
+
+  return 'Não foi possível agendar a inspeção. Tente novamente.';
 }
 
 /**
@@ -115,6 +133,7 @@ function loadInto<T>(
 export function toRequest(r: ApiAssignedRequest): Request {
   return {
     id: r.process_number,
+    key: r.id,
     elevator: r.elevator.internal_reference ?? '',
     dge: r.elevator.dge_number ?? '—',
     date: r.submitted_at.slice(0, 10),
