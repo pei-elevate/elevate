@@ -21,7 +21,7 @@ import {
 import type { ApiRegistration } from '@/features/elevators/api';
 import type { Elevator, ElevatorFilters } from '@/features/elevators/types';
 import { DocumentLink, SummaryReport } from '@/features/inspections/InspectionReport';
-import { loadAssignedRequests, loadRequests } from '@/features/inspections/api';
+import { loadAssignedRequests, loadRecentRequests, loadRequests } from '@/features/inspections/api';
 import type { Request as InspectionRequest } from '@/features/inspections/types';
 import {
   failedInspections as seedFailedInspections,
@@ -121,6 +121,12 @@ function useModel(initialRole: Role) {
   const trackedRequests = savedRequests?.role === route.role ? savedRequests.items : null;
   const [trackedError, setTrackedError] = useState(false);
   const [trackedReloads, setTrackedReloads] = useState(0);
+  // Pedidos mais recentes do perfil, para o painel (com o resultado dos concluídos). Guardados
+  // com o perfil, como os acima. null enquanto carregam.
+  const [savedRecent, setSavedRecent] = useState<SavedRequests | null>(null);
+  const recentRequests = savedRecent?.role === route.role ? savedRecent.items : null;
+  const [recentError, setRecentError] = useState(false);
+  const [recentReloads, setRecentReloads] = useState(0);
   // Elevadores do perfil, vindos da API: a lista e o painel mostram os mesmos. null enquanto
   // carregam. s.elevators (os mocks) continua para os ecrãs que ainda não usam a API.
   // Guardada com o perfil a que pertence, para não mostrar a de outro ao trocar de perfil.
@@ -246,6 +252,23 @@ function useModel(initialRole: Role) {
       () => setTrackedError(true),
     );
   }, [route.role, route.page, trackedReloads]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a página e recentReloads são gatilhos, para voltar a pedir os pedidos ao mudar de página ou ao tentar de novo
+  useEffect(() => {
+    // Só no painel de cada perfil (o da empresa de manutenção é a página dos elevadores).
+    const role = route.role;
+    const dashboard = role === 'manutencao' ? 'elevadores' : 'painel';
+    if (role !== 'proprietario' && role !== 'manutencao' && role !== 'gestor') return;
+    if (route.page !== dashboard) return;
+
+    setRecentError(false);
+
+    return loadRecentRequests(
+      role,
+      (items) => setSavedRecent({ role, items }),
+      () => setRecentError(true),
+    );
+  }, [route.role, route.page, recentReloads]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a página e apiElevatorsReloads são gatilhos, para voltar a pedir os elevadores ao mudar de página ou ao tentar de novo
   useEffect(() => {
@@ -407,6 +430,9 @@ function useModel(initialRole: Role) {
     trackedRequests,
     trackedError,
     reloadTrackedRequests: () => setTrackedReloads((n) => n + 1),
+    recentRequests,
+    recentError,
+    reloadRecentRequests: () => setRecentReloads((n) => n + 1),
     apiElevators,
     apiElevatorsError,
     reloadApiElevators: () => setApiElevatorsReloads((n) => n + 1),

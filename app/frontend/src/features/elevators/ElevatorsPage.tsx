@@ -1,6 +1,7 @@
 import { ElevatorTable } from '@/features/elevators/ElevatorTable';
 import { ElevatorsState } from '@/features/elevators/ElevatorsState';
 import { registrationStatusLabels } from '@/features/elevators/registration';
+import { RecentRequests } from '@/features/inspections/RecentRequests';
 import { defaultElevatorFilters, filterElevators } from '@/features/elevators/rules';
 import type { ElevatorFilters } from '@/features/elevators/types';
 import { Badge } from '@/shared/ui/Badge';
@@ -135,6 +136,7 @@ export function ElevatorsPage() {
           <ElevatorsState error={s.apiElevatorsError} onRetry={s.reloadApiElevators} />
         )}
       </Panel>
+      {!owner && !manager && <RecentRequests page="inspecoes" />}
       {!owner && !manager && submitted.length > 0 && (
         <Panel title="Registos submetidos">
           {submitted.map((r) => (

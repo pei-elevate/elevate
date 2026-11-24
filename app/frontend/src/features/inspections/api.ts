@@ -78,6 +78,11 @@ export function listRequests(role: Role) {
   return api<ApiTrackedRequest[]>('/inspections/requests?open=true', role);
 }
 
+/** Os pedidos mais recentes, com o resultado dos concluídos, para o painel de cada perfil. */
+export function listRecentRequests(role: Role) {
+  return api<ApiTrackedRequest[]>('/inspections/requests?recent=6', role);
+}
+
 /**
  * Pede os pedidos atribuídos e entrega-os já no formato da tabela, ou avisa do erro.
  * Devolve uma função que cancela: uma resposta que chegue depois já não é entregue.
@@ -88,6 +93,15 @@ export function loadAssignedRequests(
   onError: () => void,
 ) {
   return loadInto(listAssignedRequests(role), toRequest, onLoad, onError);
+}
+
+/** Como loadAssignedRequests, para os pedidos mais recentes do painel. */
+export function loadRecentRequests(
+  role: Role,
+  onLoad: (items: Request[]) => void,
+  onError: () => void,
+) {
+  return loadInto(listRecentRequests(role), toTrackedRequest, onLoad, onError);
 }
 
 /** Como loadAssignedRequests, para os pedidos que a manutenção e o gestor acompanham. */
