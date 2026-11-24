@@ -7,6 +7,7 @@ import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Icon } from '@/shared/ui/Icon';
 import { usePrototype } from '@/app/state';
+import { useReportDownload } from '@/features/inspections/useReportDownload';
 
 export function RequestTable({
   items,
@@ -18,6 +19,7 @@ export function RequestTable({
   open?: boolean;
 }) {
   const s = usePrototype();
+  const download = useReportDownload();
 
   return (
     <DataTable
@@ -88,7 +90,7 @@ export function RequestTable({
                       </div>
                     ) : (
                       r.status === 'Concluído' && (
-                        <button className="text-button" onClick={() => s.report(r.id, r.result)}>
+                        <button className="text-button" onClick={() => download(r)}>
                           <Icon name="download" />
                           Descarregar relatório
                         </button>

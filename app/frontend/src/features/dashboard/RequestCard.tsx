@@ -3,10 +3,10 @@ import { formatDate } from '@/shared/lib/dates';
 import { Badge } from '@/shared/ui/Badge';
 import { Icon } from '@/shared/ui/Icon';
 import { Panel } from '@/shared/ui/Panel';
-import { usePrototype } from '@/app/state';
+import { useReportDownload } from '@/features/inspections/useReportDownload';
 
 export function RequestCard({ request: r }: { request: Request }) {
-  const s = usePrototype();
+  const download = useReportDownload();
   const complete = r.status === 'Concluído';
   const current = complete ? 3 : r.status === 'Agendado' ? 2 : r.status === 'Por agendar' ? 1 : 0;
 
@@ -50,7 +50,7 @@ export function RequestCard({ request: r }: { request: Request }) {
           )}
         </div>
         {complete ? (
-          <button className="text-button" onClick={() => s.report(r.id, r.result, undefined, true)}>
+          <button className="text-button" onClick={() => download(r, true)}>
             <Icon name="download" />
             Descarregar relatório
           </button>

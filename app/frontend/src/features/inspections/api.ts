@@ -1,5 +1,5 @@
 import type { Request } from '@/features/inspections/types';
-import { ApiError, api } from '@/shared/api/client';
+import { ApiError, api, apiFile } from '@/shared/api/client';
 import type { Role } from '@/shared/auth/roles';
 
 /** Pedido atribuído à empresa de inspeção, como o backend o devolve (`AssignedRequestOut`). */
@@ -93,6 +93,20 @@ export function submitResult(role: Role, key: number, values: ResultValues, repo
     method: 'POST',
     body,
   });
+}
+
+/**
+ * Descarrega o relatório (PDF) da inspeção de um pedido (`key` é o id da API) e guarda-o com o
+ * nome que o backend indica. Uma ligação simples não chega: o pedido leva o cabeçalho do perfil.
+ */
+export async function downloadReport(role: Role, key: number) {
+  const { blob, name } = await apiFile(`/inspections/requests/${key}/report`, role);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 /** Mensagem a mostrar quando a submissão do resultado falha. */

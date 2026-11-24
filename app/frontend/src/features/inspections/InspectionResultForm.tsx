@@ -44,15 +44,13 @@ export function InspectionResultForm() {
 
   async function saveResult() {
     if (request?.key === undefined || !file) return;
-    const { key, id } = request;
+    const { key } = request;
     const report = file;
 
     setSaveError('');
     try {
       await form.save(async () => {
         await submitResult(s.route.role, key, values, report);
-        // Enquanto «Descarregar relatório» não vem da API, fica o ficheiro desta sessão.
-        s.setDocuments((d) => ({ ...d, [id]: report }));
         s.reloadAssignedRequests();
         s.notify(
           'Resultado submetido. O relatório fica no histórico do elevador, para a Câmara, o proprietário e a empresa de manutenção.',
