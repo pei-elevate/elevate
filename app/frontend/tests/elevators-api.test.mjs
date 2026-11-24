@@ -114,6 +114,7 @@ test('estados do certificado em português', () => {
 test('uma inspeção fica no formato do histórico', () => {
   assert.deepEqual(
     toInspectionRow({
+      request_id: 2,
       process_number: '2025/0118',
       submitted_at: '2025-01-14T00:00:00',
       type: 'reinspection',
@@ -125,6 +126,7 @@ test('uma inspeção fica no formato do histórico', () => {
     }),
     {
       entry: '2025/0118',
+      key: 2,
       date: '2025-01-14',
       scope: 'Reinspeção',
       inspector: 'Inspeave, Lda.',

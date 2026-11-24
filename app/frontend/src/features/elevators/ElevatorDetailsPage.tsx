@@ -26,6 +26,7 @@ import { Panel } from '@/shared/ui/Panel';
 import { Summary } from '@/shared/ui/Summary';
 import { Tabs } from '@/shared/ui/Tabs';
 import { usePrototype } from '@/app/state';
+import { useReportDownload } from '@/features/inspections/useReportDownload';
 
 type LoadError = 'not_found' | 'failed' | null;
 
@@ -86,6 +87,7 @@ function HistoryState({
 
 export function ElevatorDetailsPage() {
   const s = usePrototype();
+  const download = useReportDownload();
   const role = s.route.role;
   // O URL leva o id numérico da API; outro valor nem chega a ser pedido.
   const key = /^\d+$/.test(s.route.id) ? Number(s.route.id) : null;
@@ -166,7 +168,7 @@ export function ElevatorDetailsPage() {
             <button
               className="text-button"
               aria-label={`Descarregar relatório ${h.entry}`}
-              onClick={() => s.report(h.entry, h.result)}
+              onClick={() => download({ id: h.entry, key: h.key, result: h.result })}
             >
               <Icon name="download" />
               Descarregar relatório

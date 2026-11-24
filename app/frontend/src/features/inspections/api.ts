@@ -1,5 +1,5 @@
 import type { Request } from '@/features/inspections/types';
-import { ApiError, api } from '@/shared/api/client';
+import { ApiError, api, apiFile } from '@/shared/api/client';
 import type { Role } from '@/shared/auth/roles';
 
 /** Pedido atribuído à empresa de inspeção, como o backend o devolve (`AssignedRequestOut`). */
@@ -68,6 +68,55 @@ export function scheduleError(error: unknown): string {
     return 'Escolha a data de hoje ou uma data futura.';
 
   return 'Não foi possível agendar a inspeção. Tente novamente.';
+}
+
+/** Valores do formulário do resultado, com as datas já em AAAA-MM-DD. */
+export type ResultValues = Record<string, string>;
+
+/**
+ * Submete o resultado e o PDF de um pedido agendado (`key` é o id da API). Só vão os campos
+ * do resultado escolhido: a validade se aprovada, o prazo e as não conformidades se reprovada.
+ */
+export function submitResult(role: Role, key: number, values: ResultValues, report: File) {
+  const approved = values.result === 'Aprovada';
+  const body = new FormData();
+  body.append('result', approved ? 'approved' : 'failed');
+  body.append('performed_date', values.performed);
+  if (approved) body.append('valid_until', values.validUntil);
+  else {
+    body.append('correction_deadline', values.deadline);
+    body.append('nonconformities', values.nonconformities ?? '');
+  }
+  body.append('report', report);
+
+  return api<ApiAssignedRequest>(`/inspections/requests/${key}/result`, role, {
+    method: 'POST',
+    body,
+  });
+}
+
+/**
+ * Descarrega o relatório (PDF) da inspeção de um pedido (`key` é o id da API) e guarda-o com o
+ * nome que o backend indica. Uma ligação simples não chega: o pedido leva o cabeçalho do perfil.
+ */
+export async function downloadReport(role: Role, key: number) {
+  const { blob, name } = await apiFile(`/inspections/requests/${key}/report`, role);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Mensagem a mostrar quando a submissão do resultado falha. */
+export function resultError(error: unknown): string {
+  if (error instanceof ApiError && error.status === 409)
+    return 'Este pedido já não está agendado: pode já ter resultado. Atualize a lista.';
+  if (error instanceof ApiError && error.status === 422)
+    return 'Verifique os dados do resultado e o PDF (até 10 MB).';
+
+  return 'Não foi possível submeter o resultado. Tente novamente.';
 }
 
 /**

@@ -29,6 +29,8 @@ services:
     volumes:
       - ./app/backend:/app
       - /app/.venv
+      # Inspection reports (PDF), kept across restarts (ELEV-56).
+      - reports-data:/data/reports
     depends_on:
       db:
         condition: service_healthy
@@ -111,6 +113,7 @@ services:
 
 volumes:
   db-data:
+  reports-data:
   mydoc-data:
   authentik-db-data:
   authentik-data:

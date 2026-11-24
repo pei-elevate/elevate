@@ -208,6 +208,8 @@ class ElevatorOut(ElevatorSummaryOut):
 class ElevatorInspectionOut(BaseModel):
     """A completed inspection of the elevator, with the request it answered."""
 
+    # To download the report (GET /api/inspections/requests/{request_id}/report).
+    request_id: int
     process_number: str
     submitted_at: datetime
     type: RequestType
@@ -224,6 +226,7 @@ class ElevatorInspectionOut(BaseModel):
         assert inspection is not None  # only requests with an inspection are listed
         return cls.model_validate(
             {
+                "request_id": r.id,
                 "process_number": r.process_number,
                 "submitted_at": r.submitted_at,
                 "type": r.type,

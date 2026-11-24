@@ -147,6 +147,8 @@ export interface ApiElevator extends ApiElevatorSummary {
 
 /** Inspeção concluída de um elevador (`ElevatorInspectionOut`). */
 export interface ApiElevatorInspection {
+  /** Para descarregar o relatório (`/inspections/requests/{request_id}/report`). */
+  request_id: number;
   process_number: string;
   submitted_at: string;
   type: RequestType;
@@ -255,6 +257,7 @@ export function toElevator(a: ApiElevatorSummary): Elevator {
 export function toInspectionRow(i: ApiElevatorInspection) {
   return {
     entry: i.process_number,
+    key: i.request_id,
     date: i.submitted_at.slice(0, 10),
     scope: scopes[i.type],
     inspector: i.inspection_company.name,

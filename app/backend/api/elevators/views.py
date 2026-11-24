@@ -85,13 +85,15 @@ def _visible_elevator(db: Session, user: User, elevator_id: int) -> Elevator:
     """The elevator, if it is approved and within the user's scope. Otherwise the same
     error as an unknown one, so its existence is not revealed."""
     elevator = repository.get_elevator(db, elevator_id)
-    if (
-        elevator is None
-        or elevator.registration_status != RegistrationStatus.APPROVED
-        or not _in_scope(user, elevator)
-    ):
+    if elevator is None or not can_see(user, elevator):
         raise ElevatorNotFound
     return elevator
+
+
+def can_see(user: User, elevator: Elevator) -> bool:
+    """Whether the elevator is approved and within the user's scope: the owner's own, the
+    maintenance company's, or any for the municipal manager."""
+    return elevator.registration_status == RegistrationStatus.APPROVED and _in_scope(user, elevator)
 
 
 def _in_scope(user: User, elevator: Elevator) -> bool:

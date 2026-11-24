@@ -137,7 +137,6 @@ function useModel(initialRole: Role) {
   // Avisos do botão «Enviar aviso de inspeção», ainda simulados: ficam até recarregar.
   const [simulatedNotices, setSimulatedNotices] = useState<ElevatorNotice[]>([]);
   const [failed, setFailed] = useState(seedFailedInspections);
-  const [documents, setDocuments] = useState<Record<string, File>>({});
   const [message, setMessage] = useState('');
   const [elevatorFilters, setElevatorFilters] = useState<Partial<Record<Role, ElevatorFilters>>>(
     {},
@@ -356,7 +355,7 @@ function useModel(initialRole: Role) {
   }
 
   function report(id: string, result = 'Aprovada', file?: File, bare = false) {
-    const uploaded = file || documents[id];
+    const uploaded = file;
     setModal({
       title: `Relatório — ${id}`,
       bare,
@@ -442,8 +441,6 @@ function useModel(initialRole: Role) {
     setUrbanNotices,
     failed,
     setFailed,
-    documents,
-    setDocuments,
     message,
     setMessage,
     modal,

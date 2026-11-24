@@ -1,7 +1,8 @@
 from datetime import date, datetime
+from typing import Self
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from api.elevators.models import EquipmentType
 from api.inspections.models import InspectionResult, RequestStatus, RequestType
@@ -83,3 +84,41 @@ class ScheduleRequest(BaseModel):
         if value.tzinfo is None:
             return value
         return value.astimezone(LOCAL_TIME).replace(tzinfo=None)
+
+
+class ResultIn(BaseModel):
+    """The verdict the inspection company submits after the visit (Submit Inspection Results).
+
+    Approved needs the certificate's validity; failed needs the nonconformities and the
+    deadline to correct them. Whether performed_date is in the future is checked by the service,
+    which knows today's date.
+    """
+
+    result: InspectionResult
+    performed_date: date
+    valid_until: date | None = None
+    correction_deadline: date | None = None
+    nonconformities: str | None = None
+
+    @field_validator("valid_until", "correction_deadline", "nonconformities", mode="before")
+    @classmethod
+    def blank_is_none(cls, value: object) -> object:
+        """A form sends the fields it does not use as empty text."""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value.strip() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def fields_of_the_result(self) -> Self:
+        if self.result == InspectionResult.APPROVED:
+            if self.valid_until is None or self.valid_until <= self.performed_date:
+                raise ValueError("An approved inspection needs a validity after its date")
+            self.correction_deadline = None
+            self.nonconformities = None
+        else:
+            if not self.nonconformities:
+                raise ValueError("A failed inspection needs its nonconformities")
+            if self.correction_deadline is None or self.correction_deadline < self.performed_date:
+                raise ValueError("A failed inspection needs a deadline from its date on")
+            self.valid_until = None
+        return self

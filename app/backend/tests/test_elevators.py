@@ -478,7 +478,10 @@ def test_inspections_only_completed_newest_first(
 
     response = client.get(f"{detail_url(world, '01.05.0079')}/inspections", headers=OWNER_A)
     assert response.status_code == 200, response.text
-    assert response.json() == [
+    body = response.json()
+    # Each one says which request to download its report from (ELEV-56).
+    assert all(isinstance(h.pop("request_id"), int) for h in body)
+    assert body == [
         {
             "process_number": "2025/0118",
             "submitted_at": "2025-01-14T00:00:00",

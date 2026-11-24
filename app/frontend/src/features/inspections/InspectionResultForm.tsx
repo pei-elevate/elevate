@@ -1,29 +1,36 @@
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { usePrototype } from '@/app/state';
-import { certificateStatus } from '@/features/elevators/rules';
+import { resultError, submitResult } from '@/features/inspections/api';
 import {
   RequestBreadcrumb,
   RequestSummary,
   requestUnavailable,
-  useInspectionRequest,
+  useAssignedRequest,
 } from '@/features/inspections/inspectionRequest';
 import { validateResult } from '@/features/inspections/validation';
 import { FormShell } from '@/shared/forms/FormShell';
 import { useSubmissionForm } from '@/shared/forms/useSubmissionForm';
-import { formatDate, localToday } from '@/shared/lib/dates';
+import { formatDate, isISODate, localToday } from '@/shared/lib/dates';
+import { Banner } from '@/shared/ui/Banner';
 import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
 
 const title = 'Submeter resultado da inspeção';
 
+// Resultado e relatório de um pedido agendado (ELEV-56). Corrigir um resultado já submetido
+// fica para mais tarde: um pedido concluído não abre aqui.
 export function InspectionResultForm() {
   const s = usePrototype();
-  const { request, elevator } = useInspectionRequest();
+  const { request, loading } = useAssignedRequest();
+  const [saveError, setSaveError] = useState('');
   const form = useSubmissionForm({
     dirty: s.dirty,
     initial: { result: 'Aprovada', performed: localToday() },
   });
   const { values, file, field, upload } = form;
+  // Enquanto a data de realização não está completa, a validade e o prazo contam de hoje.
+  const performedOrToday = isISODate(values.performed) ? values.performed : localToday();
   const parent = 'atribuidas';
   const back = () => s.go(parent);
 
@@ -38,79 +45,57 @@ export function InspectionResultForm() {
   }
 
   async function saveResult() {
-    await form.save(() => {
-      if (!request) return;
-      s.setRequests((items) =>
-        items.map((r) =>
-          r.id === request.id
-            ? {
-                ...r,
-                status: 'Concluído',
-                result: values.result,
-                performed: values.performed,
-                report: file?.name,
-                nonconformities: values.nonconformities,
-              }
-            : r,
-        ),
-      );
+    if (request?.key === undefined || !file) return;
+    const { key } = request;
+    const report = file;
 
-      if (file) s.setDocuments((d) => ({ ...d, [request.id]: file }));
-
-      s.setElevators((items) =>
-        items.map((e) =>
-          e.id === request.elevator
-            ? {
-                ...e,
-                status: certificateStatus(values.result, values.validUntil || ''),
-                validUntil: values.result === 'Reprovada' ? '' : values.validUntil,
-                entry: request.id,
-                entryDate: request.date,
-              }
-            : e,
-        ),
-      );
-
-      if (values.result === 'Reprovada') {
-        s.setFailed((items) => [
-          ...items.filter((f) => f.elevator !== request.elevator),
-          {
-            elevator: request.elevator,
-            date: values.performed,
-            deadline: values.deadline,
-            resolved: false,
-            requestId: request.id,
-          },
-        ]);
-      }
-
-      if (values.result === 'Aprovada')
-        s.setFailed((items) => items.filter((f) => f.elevator !== request.elevator));
-
-      s.notify('Resultado submetido. O relatório ficou disponível para consulta nesta sessão.');
-    });
+    setSaveError('');
+    try {
+      await form.save(async () => {
+        await submitResult(s.route.role, key, values, report);
+        s.reloadAssignedRequests();
+        s.notify(
+          'Resultado submetido. O relatório fica no histórico do elevador, para a Câmara, o proprietário e a empresa de manutenção.',
+        );
+      });
+    } catch (error) {
+      setSaveError(resultError(error));
+      return;
+    }
     back();
   }
 
-  // Sem o elevador nos dados de exemplo, o pedido não pode ser tratado aqui.
+  if (s.route.role === 'inspecao' && loading)
+    return (
+      <>
+        <Heading title={title} />
+        <p role="status">A carregar pedido…</p>
+      </>
+    );
+
   const unavailable = requestUnavailable(
     s.route.role,
-    elevator ? request : undefined,
+    request,
     (status) => status === 'Agendado',
     s.go,
   );
 
-  if (unavailable) return unavailable;
+  if (unavailable || !request) return unavailable;
 
   return (
     <>
-      <RequestBreadcrumb label="Inspeções atribuídas" onBack={back} elevatorId={elevator?.id} />
+      <RequestBreadcrumb label="Inspeções atribuídas" onBack={back} elevatorId={request.elevator} />
       <Heading
         title={title}
-        description={`Processo n.º ${request?.id}`}
-        status={request?.status}
+        description={`Processo n.º ${request.id}`}
+        status={request.status}
         onBack={s.route.id ? () => s.back(parent) : undefined}
       />
+      {saveError && (
+        <div role="alert">
+          <Banner tone="warning">{saveError}</Banner>
+        </div>
+      )}
       <FormShell
         form={form}
         title={title}
@@ -119,13 +104,9 @@ export function InspectionResultForm() {
         submitLabel="Submeter resultado"
       >
         <RequestSummary
-          request={request!}
-          elevator={elevator!}
+          request={request}
           extra={[
-            [
-              'Agendada para',
-              `${formatDate(request!.scheduled)} · ${request!.scheduled.slice(11)}`,
-            ],
+            ['Agendada para', `${formatDate(request.scheduled)} · ${request.scheduled.slice(11)}`],
           ]}
         />
         <Panel title="Resultado">
@@ -143,12 +124,12 @@ export function InspectionResultForm() {
               ? field('validUntil', 'Certificado válido até', {
                   required: true,
                   type: 'date',
-                  min: values.performed || localToday(),
+                  min: performedOrToday,
                 })
               : field('deadline', 'Prazo de correção', {
                   required: true,
                   type: 'date',
-                  min: values.performed || localToday(),
+                  min: performedOrToday,
                 })}
             {field('nonconformities', 'Não conformidades', {
               type: 'textarea',
