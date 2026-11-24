@@ -46,3 +46,19 @@ export function validateDateFields(v: Values, keys: string[], errors: Values) {
       errors[key] = 'Indique uma data válida no formato DD/MM/YYYY.';
   }
 }
+
+/**
+ * Se o ficheiro é mesmo um PDF: começa por «%PDF». A extensão e o tipo que o browser indica
+ * vêm só do nome, por isso um ficheiro de texto renomeado para .pdf passa por eles.
+ */
+export function startsAsPdf(file: Blob): Promise<boolean> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const bytes = new Uint8Array(reader.result as ArrayBuffer);
+      resolve(String.fromCharCode(...bytes) === '%PDF');
+    };
+    reader.onerror = () => resolve(false);
+    reader.readAsArrayBuffer(file.slice(0, 4));
+  });
+}

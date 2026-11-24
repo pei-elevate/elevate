@@ -293,3 +293,24 @@ test('apagar ou escrever a data de realização aos poucos não rebenta o formul
   // Enquanto a data não está completa, a validade conta a partir de hoje.
   assert.match(main(), /Certificado válido até/);
 });
+
+test('um ficheiro .pdf que não é PDF dá erro no campo e não chega à API', async () => {
+  const fetch = stubApi();
+  await mount('/resultado/2026%2F0341');
+
+  // A extensão e o tipo dizem PDF, mas o conteúdo não começa por %PDF.
+  await fill(
+    { performed: '19/11/2026', validUntil: '19/11/2028' },
+    new File(['isto nao e um pdf\n'], 'nao-e-pdf.pdf', { type: 'application/pdf' }),
+  );
+
+  await until(() =>
+    assert.match(
+      document.querySelector('#document-error')?.textContent ?? '',
+      /O ficheiro «nao-e-pdf\.pdf» não é um PDF\./,
+    ),
+  );
+  assert.match(main(), /Nenhum ficheiro selecionado/);
+  await send();
+  assert.equal(posts(fetch).length, 0);
+});

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
 import type { Values } from '@/shared/forms/types';
+import { startsAsPdf } from '@/shared/forms/validation';
 import { formatDate, isISODate, maskDate, maskTime, parseDateInput } from '@/shared/lib/dates';
 
 type FieldOptions = {
@@ -161,9 +162,11 @@ export function useSubmissionForm({
           accept="application/pdf,.pdf"
           hidden
           onChange={(e) => {
-            setFile(e.target.files?.[0] || null);
+            const chosen = e.target.files?.[0] || null;
+            setFile(chosen);
             dirty.current = true;
             setErrors((v) => ({ ...v, document: '' }));
+            if (chosen) void refuseIfNotPdf(chosen);
           }}
         />
         <button
@@ -203,6 +206,17 @@ export function useSubmissionForm({
       )}
     </div>
   );
+
+  /** Um ficheiro que não começa por %PDF sai logo, com o erro no campo, sem ir à API. */
+  async function refuseIfNotPdf(chosen: File) {
+    if (await startsAsPdf(chosen)) return;
+    setFile((current) => (current === chosen ? null : current));
+    if (fileInput.current) fileInput.current.value = '';
+    setErrors((v) => ({
+      ...v,
+      document: `O ficheiro «${chosen.name}» não é um PDF. Escolha o documento em PDF.`,
+    }));
+  }
 
   /** Valida; com erros, mostra-os e põe o foco no primeiro campo inválido; sem erros, continua. */
   function submit(event: FormEvent, validate: () => Values, onValid: () => void) {
