@@ -10,6 +10,8 @@ def list_requests(
     *,
     inspection_company_id: int | None = None,
     maintenance_company_id: int | None = None,
+    owner_id: int | None = None,
+    elevator_id: int | None = None,
     status: RequestStatus | None = None,
     only_open: bool = False,
     text: str | None = None,
@@ -18,7 +20,8 @@ def list_requests(
     """Requests by status (awaiting scheduling first) and oldest first.
 
     inspection_company_id keeps the ones assigned to that company, maintenance_company_id the
-    ones for the elevators it maintains; with neither, all of them. only_open leaves out the
+    ones for the elevators it maintains, owner_id the ones for the owner's elevators,
+    elevator_id one elevator's; with none, all of them. only_open leaves out the
     completed ones. text matches part of the process number, the internal reference or the
     address. with_inspection_company also loads the company that handles each request.
     """
@@ -35,6 +38,10 @@ def list_requests(
         query = query.where(InspectionRequest.inspection_company_id == inspection_company_id)
     if maintenance_company_id is not None:
         query = query.where(Elevator.maintenance_company_id == maintenance_company_id)
+    if owner_id is not None:
+        query = query.where(Elevator.owner_id == owner_id)
+    if elevator_id is not None:
+        query = query.where(InspectionRequest.elevator_id == elevator_id)
     if with_inspection_company:
         query = query.options(joinedload(InspectionRequest.inspection_company))
     if only_open:

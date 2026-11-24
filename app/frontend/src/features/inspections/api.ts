@@ -60,6 +60,14 @@ export function listRequests(role: Role) {
   return api<ApiTrackedRequest[]>('/inspections/requests?open=true', role);
 }
 
+/** Pedidos em aberto de um elevador, para a sua ficha (o resultado fica no histórico). */
+export function listElevatorRequests(role: Role, elevatorId: number) {
+  return api<ApiTrackedRequest[]>(
+    `/inspections/requests?open=true&elevator_id=${elevatorId}`,
+    role,
+  );
+}
+
 /**
  * Pede os pedidos atribuídos e entrega-os já no formato da tabela, ou avisa do erro.
  * Devolve uma função que cancela: uma resposta que chegue depois já não é entregue.
