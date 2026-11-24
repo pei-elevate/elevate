@@ -1,5 +1,6 @@
 export interface Request {
   id: string;
+  key?: number;
   elevator: string;
   date: string;
   scope: string;

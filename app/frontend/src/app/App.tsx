@@ -38,7 +38,7 @@ function Interface() {
     'nao-registados': s.permits?.filter((p) => p.status !== 'registered').length ?? 0,
     reprovadas: s.failed.filter((f) => !f.resolved).length,
     atribuidas: (s.assignedRequests ?? []).filter((r) => r.status !== 'Concluído').length,
-    agendar: s.requests.filter((r) => r.status === 'Por agendar').length,
+    agendar: (s.assignedRequests ?? []).filter((r) => r.status === 'Por agendar').length,
   };
 
   function help() {

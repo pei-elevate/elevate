@@ -39,6 +39,7 @@ test('os pedidos atribuídos são pedidos em nome da empresa de inspeção', asy
 test('um pedido agendado fica no formato da tabela', () => {
   assert.deepEqual(toRequest(apiRequest()), {
     id: '2026/0341',
+    key: 1,
     elevator: '01.05.0154',
     dge: '—',
     date: '2026-10-02',
