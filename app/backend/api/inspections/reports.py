@@ -30,11 +30,20 @@ def save(content: bytes) -> str:
     """Write the report and return its stored name."""
     name = f"{uuid4().hex}.pdf"
     settings.reports_dir.mkdir(parents=True, exist_ok=True)
-    path(name).write_bytes(content)
+    # "x" creates the file and fails if it already exists, so no report is ever overwritten.
+    with path(name).open("xb") as file:
+        file.write(content)
     return name
 
 
 def path(name: str) -> Path:
+    """The report's file, always directly inside the reports folder.
+
+    Only a plain file name is accepted: one with a folder in it, or "." / "..", could point
+    outside the folder.
+    """
+    if not name or name in {".", ".."} or Path(name).name != name:
+        raise ValueError(f"Not a report file name: {name!r}")
     return settings.reports_dir / name
 
 

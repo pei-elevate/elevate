@@ -193,3 +193,17 @@ def test_the_seed_writes_a_pdf_for_every_sample_report(db: Session, reports_dir:
         assert (reports_dir / name).read_bytes().startswith(b"%PDF")
     # Reports of the data the seed replaced are removed with it.
     assert not (reports_dir / "left-over.pdf").exists()
+
+
+@pytest.mark.parametrize("name", ["../x.pdf", "a/b.pdf", "/etc/passwd", "", ".", ".."])
+def test_a_report_name_never_leaves_the_folder(reports_dir: Path, name: str):
+    from api.inspections import reports
+
+    with pytest.raises(ValueError):
+        reports.path(name)
+
+
+def test_a_plain_report_name_stays_in_the_folder(reports_dir: Path):
+    from api.inspections import reports
+
+    assert reports.path("relatorio.pdf") == reports_dir / "relatorio.pdf"
