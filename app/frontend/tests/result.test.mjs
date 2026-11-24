@@ -281,3 +281,15 @@ test('um pedido por agendar não abre o formulário', async () => {
   assert.match(main(), /Ação indisponível/);
   assert.equal(document.querySelector('main form'), null);
 });
+
+test('apagar ou escrever a data de realização aos poucos não rebenta o formulário', async () => {
+  stubApi();
+  await mount('/resultado/2026%2F0341');
+
+  for (const partial of ['', '1', '19/1', '19/11/2']) {
+    await act(async () => set('performed', partial));
+    assert.match(main(), /Submeter resultado da inspeção/, partial);
+  }
+  // Enquanto a data não está completa, a validade conta a partir de hoje.
+  assert.match(main(), /Certificado válido até/);
+});

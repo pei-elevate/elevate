@@ -55,8 +55,9 @@ export function useSubmissionForm({
     const hint = date
       ? [
           'Formato DD/MM/YYYY.',
-          options.min ? `A partir de ${formatDate(options.min)}.` : '',
-          options.max ? `Até ${formatDate(options.max)}.` : '',
+          // Um limite que ainda está a ser escrito noutro campo não é uma data: fica de fora.
+          options.min && isISODate(options.min) ? `A partir de ${formatDate(options.min)}.` : '',
+          options.max && isISODate(options.max) ? `Até ${formatDate(options.max)}.` : '',
         ]
           .filter(Boolean)
           .join(' ')

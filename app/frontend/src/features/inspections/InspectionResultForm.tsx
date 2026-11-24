@@ -11,7 +11,7 @@ import {
 import { validateResult } from '@/features/inspections/validation';
 import { FormShell } from '@/shared/forms/FormShell';
 import { useSubmissionForm } from '@/shared/forms/useSubmissionForm';
-import { formatDate, localToday } from '@/shared/lib/dates';
+import { formatDate, isISODate, localToday } from '@/shared/lib/dates';
 import { Banner } from '@/shared/ui/Banner';
 import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
@@ -29,6 +29,8 @@ export function InspectionResultForm() {
     initial: { result: 'Aprovada', performed: localToday() },
   });
   const { values, file, field, upload } = form;
+  // Enquanto a data de realização não está completa, a validade e o prazo contam de hoje.
+  const performedOrToday = isISODate(values.performed) ? values.performed : localToday();
   const parent = 'atribuidas';
   const back = () => s.go(parent);
 
@@ -122,12 +124,12 @@ export function InspectionResultForm() {
               ? field('validUntil', 'Certificado válido até', {
                   required: true,
                   type: 'date',
-                  min: values.performed || localToday(),
+                  min: performedOrToday,
                 })
               : field('deadline', 'Prazo de correção', {
                   required: true,
                   type: 'date',
-                  min: values.performed || localToday(),
+                  min: performedOrToday,
                 })}
             {field('nonconformities', 'Não conformidades', {
               type: 'textarea',
