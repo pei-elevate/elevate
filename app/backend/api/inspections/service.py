@@ -27,14 +27,14 @@ def list_requests(
     status: RequestStatus | None = None,
     text: str | None = None,
     only_open: bool = False,
-    elevator_id: int | None = None,
+    recent: int | None = None,
 ) -> list[InspectionRequest]:
     """The requests whose status the user follows (Check Request / Inspection Status).
 
     An owner sees the ones for their elevators, a maintenance company the ones for the
     elevators it maintains, the municipal manager all of them. Anyone else, or an owner or
     maintenance user without one set up, sees none. only_open leaves out the completed ones,
-    which stay in each elevator's history; elevator_id keeps one elevator's.
+    which stay in each elevator's history; recent keeps the most recent ones, for the dashboard.
     """
     if user.role == UserRole.MUNICIPAL_MANAGER:
         scope = {}
@@ -49,7 +49,7 @@ def list_requests(
         **scope,
         status=status,
         only_open=only_open,
-        elevator_id=elevator_id,
+        recent=recent,
         text=_clean(text),
         with_inspection_company=True,
     )

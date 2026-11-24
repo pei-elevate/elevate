@@ -37,9 +37,10 @@ def list_requests(
     request_status: Status = None,
     q: Text = None,
     only_open: Annotated[bool, Query(alias="open")] = False,
-    elevator_id: int | None = None,
+    recent: Annotated[int | None, Query(ge=1, le=50)] = None,
 ) -> list[InspectionRequest]:
     """Requests and their status (Check Request / Inspection Status): an owner's elevators,
     a maintenance company's, or all of them for the municipal manager. open=true leaves out
-    the completed ones; elevator_id keeps one elevator's."""
-    return service.list_requests(db, user, request_status, q, only_open, elevator_id)
+    the completed ones; recent=N gives the N most recently submitted, newest first, for the
+    dashboard."""
+    return service.list_requests(db, user, request_status, q, only_open, recent)

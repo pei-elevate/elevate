@@ -8,7 +8,13 @@ import { createRoot } from 'react-dom/client';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeAll, test, vi } from 'vitest';
 import { createRoutes } from '@/app/App';
-import { listRequests, loadRequests, toTrackedRequest } from '@/features/inspections/api';
+import {
+  listRecentRequests,
+  listRequests,
+  loadRecentRequests,
+  loadRequests,
+  toTrackedRequest,
+} from '@/features/inspections/api';
 
 beforeAll(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -68,11 +74,12 @@ const requests = [
 
 /** Responde aos pedidos de inspeção com `answer` (lista ou código de erro), aos elevadores
  * com `elevators`; o resto, vazio. */
-function stubApi(answer, elevators = () => []) {
+function stubApi(answer, elevators = () => [], recent = () => []) {
   const fetch = vi.fn(async (url) => {
     const routes = {
       '/api/inspections/requests?open=true': answer,
       '/api/elevators': elevators,
+      '/api/inspections/requests?recent=6': recent,
     };
     const value = String(url) in routes ? routes[String(url)]() : [];
     return typeof value === 'number'
@@ -239,4 +246,125 @@ test('os prazos avisam quando os elevadores não carregam', async () => {
   await mount('manutencao', '/inspecoes');
 
   assert.match(main(), /Não foi possível carregar os prazos\./);
+});
+
+// O painel de cada perfil (ELEV-55): o estado, a data marcada e o resultado quando existe.
+const recent = [
+  ...requests,
+  apiRequest({
+    id: 3,
+    process_number: '2025/0118',
+    status: 'completed',
+    submitted_at: '2025-01-14T09:00:00',
+    scheduled_at: '2025-03-03T10:00:00',
+    inspection: { performed_date: '2025-03-03', result: 'failed' },
+  }),
+];
+
+test('o painel pede os pedidos mais recentes, com os concluídos', async () => {
+  const fetch = stubApi(() => []);
+
+  await listRecentRequests('proprietario');
+
+  const [url, init] = fetch.mock.calls[0];
+  assert.equal(url, '/api/inspections/requests?recent=6');
+  assert.equal(init.headers['X-User-Id'], 'seed-owner');
+});
+
+test('a carga dos recentes entrega-os já convertidos', async () => {
+  stubApi(
+    () => [],
+    () => [],
+    () => recent,
+  );
+  const onLoad = vi.fn();
+
+  loadRecentRequests('gestor', onLoad, vi.fn());
+
+  await vi.waitFor(() => assert.equal(onLoad.mock.calls.length, 1));
+  assert.equal(onLoad.mock.calls[0][0][2].result, 'Reprovada');
+});
+
+test('o proprietário vê no painel o estado, a data marcada e o resultado', async () => {
+  stubApi(
+    () => [],
+    () => [],
+    () => recent,
+  );
+  await mount('proprietario', '/painel');
+
+  assert.match(main(), /Processo n\.º 2026\/0388/);
+  assert.match(main(), /A aguardar agendamento/);
+  // Agendado: quando é a inspeção.
+  assert.match(main(), /19\/11\/2026, 10:00/);
+  // Concluído: o resultado oficial.
+  assert.match(main(), /Processo n\.º 2025\/0118/);
+  assert.match(main(), /Reprovada/);
+});
+
+test('o proprietário sem pedidos vê a indicação no painel', async () => {
+  stubApi(() => []);
+  await mount('proprietario', '/painel');
+
+  assert.match(main(), /Ainda não há pedidos de inspeção\./);
+});
+
+test('o gestor vê no painel os pedidos recentes e pode abrir a lista', async () => {
+  stubApi(
+    () => [],
+    () => [],
+    () => recent,
+  );
+  const router = await mount('gestor', '/painel');
+
+  assert.match(main(), /2026\/0388/);
+  assert.match(main(), /Agendado/);
+  assert.match(main(), /10:00/);
+  assert.match(main(), /Reprovada/);
+
+  const link = [...document.querySelectorAll('button')].find(
+    (b) => b.textContent.trim() === 'Ver todos os pedidos',
+  );
+  act(() => link.click());
+  await settle();
+  assert.equal(router.state.location.pathname, '/pedidos');
+});
+
+test('a empresa de manutenção vê os pedidos recentes no seu painel', async () => {
+  stubApi(
+    () => [],
+    () => [],
+    () => recent,
+  );
+  const router = await mount('manutencao', '/elevadores');
+
+  assert.match(main(), /Pedidos de inspeção/);
+  assert.match(main(), /2025\/0118/);
+  assert.match(main(), /Reprovada/);
+
+  const link = [...document.querySelectorAll('button')].find(
+    (b) => b.textContent.trim() === 'Ver todos os pedidos',
+  );
+  act(() => link.click());
+  await settle();
+  assert.equal(router.state.location.pathname, '/inspecoes');
+});
+
+test('o painel avisa quando os pedidos não carregam e tenta de novo', async () => {
+  let fail = true;
+  stubApi(
+    () => [],
+    () => [],
+    () => (fail ? 500 : recent),
+  );
+  await mount('gestor', '/painel');
+
+  assert.match(main(), /Não foi possível carregar os pedidos de inspeção\./);
+  fail = false;
+  const retry = [...document.querySelectorAll('button')].find(
+    (b) => b.textContent.trim() === 'Tentar novamente',
+  );
+  act(() => retry.click());
+  await settle();
+  assert.match(main(), /2026\/0388/);
 });

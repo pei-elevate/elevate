@@ -340,13 +340,16 @@ def test_an_owner_user_without_an_owner_sees_nothing(client: TestClient, db: Ses
     assert numbers(client.get(URL, headers={"X-User-Id": "new"})) == []
 
 
-def test_filters_by_elevator(client: TestClient, requests, elevators):
-    gravito, _, viseu = elevators
+def test_recent_gives_the_newest_first_with_their_result(client: TestClient, requests):
+    response = client.get(URL, headers=MANAGER, params={"recent": 3})
 
-    params = {"elevator_id": gravito.id}
-    assert numbers(client.get(URL, headers=OWNER_A, params=params)) == ["2026/0377", "2025/0118"]
-    assert numbers(
-        client.get(URL, headers=OWNER_A, params={"elevator_id": gravito.id, "open": "true"})
-    ) == ["2026/0377"]
-    # Another owner's elevator: nothing, as if it had no requests.
-    assert numbers(client.get(URL, headers=OWNER_A, params={"elevator_id": viseu.id})) == []
+    # Newest submitted first, completed ones included, so the dashboard shows the result.
+    assert numbers(response) == ["2026/0377", "2026/0400", "2026/0341"]
+    owner = client.get(URL, headers=OWNER_A, params={"recent": 5}).json()
+    assert [r["process_number"] for r in owner] == ["2026/0377", "2026/0341", "2025/0118"]
+    assert owner[2]["inspection"]["result"] == "failed"
+
+
+@pytest.mark.parametrize("recent", [0, 51])
+def test_recent_is_bounded(client: TestClient, requests, recent):
+    assert client.get(URL, headers=MANAGER, params={"recent": recent}).status_code == 422

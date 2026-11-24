@@ -60,12 +60,9 @@ export function listRequests(role: Role) {
   return api<ApiTrackedRequest[]>('/inspections/requests?open=true', role);
 }
 
-/** Pedidos em aberto de um elevador, para a sua ficha (o resultado fica no histórico). */
-export function listElevatorRequests(role: Role, elevatorId: number) {
-  return api<ApiTrackedRequest[]>(
-    `/inspections/requests?open=true&elevator_id=${elevatorId}`,
-    role,
-  );
+/** Os pedidos mais recentes, com o resultado dos concluídos, para o painel de cada perfil. */
+export function listRecentRequests(role: Role) {
+  return api<ApiTrackedRequest[]>('/inspections/requests?recent=6', role);
 }
 
 /**
@@ -78,6 +75,15 @@ export function loadAssignedRequests(
   onError: () => void,
 ) {
   return loadInto(listAssignedRequests(role), toRequest, onLoad, onError);
+}
+
+/** Como loadAssignedRequests, para os pedidos mais recentes do painel. */
+export function loadRecentRequests(
+  role: Role,
+  onLoad: (items: Request[]) => void,
+  onError: () => void,
+) {
+  return loadInto(listRecentRequests(role), toTrackedRequest, onLoad, onError);
 }
 
 /** Como loadAssignedRequests, para os pedidos que a manutenção e o gestor acompanham. */

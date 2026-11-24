@@ -10,7 +10,6 @@ import {
 } from '@/features/elevators/api';
 import { elevatorDataModal } from '@/features/elevators/elevatorDataModal';
 import type { Elevator } from '@/features/elevators/types';
-import { listElevatorRequests, toTrackedRequest } from '@/features/inspections/api';
 import { noticeModal } from '@/features/notices/noticeModal';
 import { sendManualNotice } from '@/features/notices/rules';
 import { ApiError } from '@/shared/api/client';
@@ -94,8 +93,6 @@ export function ElevatorDetailsPage() {
     owner = role === 'proprietario';
   const detail = useElevatorResource(getElevator, role, key);
   const inspections = useElevatorResource(listElevatorInspections, role, key);
-  // Pedidos em curso: o estado e quando é a inspeção (Check Request / Inspection Status).
-  const requests = useElevatorResource(listElevatorRequests, role, key);
   // A vista da EMA não tem o separador de avisos.
   const apiNotices = useElevatorResource(listElevatorNotices, role, manager || owner ? key : null);
   const [tab, setTab] = useState('Inspeções');
@@ -123,7 +120,6 @@ export function ElevatorDetailsPage() {
   const data = detail.data;
   const e = toElevator(data);
   const history = inspections.data?.map(toInspectionRow) ?? [];
-  const open = requests.data?.map(toTrackedRequest) ?? [];
   const notices = [
     ...s.simulatedNotices.filter((n) => n.elevator === e.id),
     ...(apiNotices.data?.map((n) => toNotice(n, e.id)) ?? []),
@@ -185,64 +181,6 @@ export function ElevatorDetailsPage() {
           <tr>
             <td colSpan={7}>
               <Empty>Ainda não há inspeções concluídas para este elevador.</Empty>
-            </td>
-          </tr>
-        )
-      )}
-    </DataTable>
-  );
-
-  const requestTable = (
-    <DataTable
-      headers={[
-        'N.º de processo',
-        'Data do processo',
-        'Âmbito',
-        'Estado',
-        'Data da inspeção',
-        'Empresa de inspeção',
-      ]}
-    >
-      {open.map((r) => (
-        <tr key={r.id}>
-          <td>
-            <strong>{r.id}</strong>
-          </td>
-          <td>{formatDate(r.date)}</td>
-          <td>{r.scope}</td>
-          <td>
-            <Badge>{r.status}</Badge>
-          </td>
-          <td>
-            {formatDate(r.scheduled)}
-            {r.scheduled && <small>{r.scheduled.slice(11)}</small>}
-          </td>
-          <td>{r.inspectionCompany}</td>
-        </tr>
-      ))}
-      {!requests.data ? (
-        <tr>
-          <td colSpan={6}>
-            {requests.error ? (
-              <Banner
-                tone="warning"
-                action={<Button onClick={requests.retry}>Tentar de novo</Button>}
-              >
-                Não foi possível carregar os pedidos de inspeção.
-              </Banner>
-            ) : (
-              <p role="status">A carregar…</p>
-            )}
-          </td>
-        </tr>
-      ) : (
-        !open.length && (
-          <tr>
-            <td colSpan={6}>
-              <Empty>
-                Não há pedidos de inspeção em curso. O resultado das inspeções concluídas está no
-                histórico.
-              </Empty>
             </td>
           </tr>
         )
@@ -352,7 +290,6 @@ export function ElevatorDetailsPage() {
           ]}
         />
       </Panel>
-      <Panel title="Pedidos de inspeção em curso">{requestTable}</Panel>
       {manager || owner ? (
         <Panel
           title="Histórico"
