@@ -74,3 +74,12 @@ def get_request_for_update(db: Session, request_id: int) -> InspectionRequest | 
     """The request, locked until the transaction ends, so two people scheduling it at the same
     time cannot both see it awaiting scheduling."""
     return db.get(InspectionRequest, request_id, with_for_update=True, populate_existing=True)
+
+
+def get_request(db: Session, request_id: int) -> InspectionRequest | None:
+    """The request with its elevator and its inspection, if it has one."""
+    return db.scalars(
+        select(InspectionRequest)
+        .options(joinedload(InspectionRequest.elevator), joinedload(InspectionRequest.inspection))
+        .where(InspectionRequest.id == request_id)
+    ).first()

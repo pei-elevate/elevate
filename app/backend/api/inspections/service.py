@@ -1,10 +1,12 @@
 """Inspection requests as each profile sees them, scheduling them and submitting their result."""
 
 from datetime import date, datetime
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from api.accounts.models import User, UserRole
+from api.elevators import views as elevator_views
 from api.inspections import reports, repository
 from api.inspections.models import (
     FailedInspectionStatus,
@@ -34,6 +36,10 @@ class RequestNotCompletable(Exception):
 
 class PerformedInFuture(Exception):
     """The inspection cannot have been performed after today."""
+
+
+class ReportMissing(Exception):
+    """The inspection names a report whose file is not in the reports folder."""
 
 
 def list_assigned_requests(
@@ -167,6 +173,32 @@ def submit_result(
         raise
     db.refresh(request)
     return request
+
+
+def report_of(db: Session, user: User, request_id: int) -> tuple[Path, str]:
+    """The PDF of a request's inspection and the name to download it with.
+
+    The inspection company of the request gets it, and so does whoever sees the elevator's
+    history: its owner, its maintenance company and the municipal manager. For anyone else, or
+    a request without a result yet, the request is reported as not found.
+    """
+    request = repository.get_request(db, request_id)
+    if request is None or request.inspection is None:
+        raise RequestNotFound
+    if user.role == UserRole.INSPECTION:
+        allowed = (
+            user.inspection_company_id is not None
+            and request.inspection_company_id == user.inspection_company_id
+        )
+    else:
+        allowed = elevator_views.can_see(user, request.elevator)
+    if not allowed:
+        raise RequestNotFound
+
+    path = reports.path(request.inspection.report_file)
+    if not path.is_file():
+        raise ReportMissing
+    return path, f"relatorio-{request.process_number.replace('/', '-')}.pdf"
 
 
 def _clean(text: str | None) -> str | None:

@@ -11,7 +11,7 @@ NIFs, emails, postal codes and dates missing from the mocks are made up.
 
 from datetime import date, datetime
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from api.accounts.models import (
@@ -24,6 +24,7 @@ from api.accounts.models import (
 )
 from api.database import Base, SessionLocal
 from api.elevators.models import Elevator, EquipmentType, ReferenceCounter, RegistrationStatus
+from api.inspections import reports
 from api.inspections.models import (
     FailedInspectionStatus,
     Inspection,
@@ -416,6 +417,51 @@ def seed(db: Session) -> None:
         ]
     )
     db.commit()
+    write_sample_reports(db)
+
+
+def write_sample_reports(db: Session) -> None:
+    """A PDF for each sample inspection, so «Descarregar relatório» works on these data too.
+
+    The reports of the data the seed replaced are removed with them.
+    """
+    reports.clear()
+    reports.settings.reports_dir.mkdir(parents=True, exist_ok=True)
+    rows = db.execute(
+        select(Inspection.report_file, InspectionRequest.process_number).join(
+            InspectionRequest, Inspection.request_id == InspectionRequest.id
+        )
+    )
+    for report_file, process_number in rows:
+        reports.path(report_file).write_bytes(
+            sample_pdf(f"Relatorio de inspecao - processo {process_number} (exemplo)")
+        )
+
+
+def sample_pdf(line: str) -> bytes:
+    """A one-page PDF with one line of text (ASCII), written by hand to avoid a dependency."""
+    stream = f"BT /F1 14 Tf 72 760 Td ({line}) Tj ET".encode()
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+        b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream),
+    ]
+    pdf = b"%PDF-1.4\n"
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(pdf))
+        pdf += b"%d 0 obj\n%s\nendobj\n" % (number, body)
+    xref = len(pdf)
+    pdf += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    pdf += b"".join(b"%010d 00000 n \n" % offset for offset in offsets)
+    pdf += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objects) + 1,
+        xref,
+    )
+    return pdf
 
 
 def main() -> None:

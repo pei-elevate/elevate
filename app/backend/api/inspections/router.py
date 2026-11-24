@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from api.accounts.models import User, UserRole
@@ -26,6 +27,18 @@ InspectionUser = Annotated[User, Depends(require_role(UserRole.INSPECTION))]
 Follower = Annotated[
     User,
     Depends(require_role(UserRole.OWNER, UserRole.MAINTENANCE, UserRole.MUNICIPAL_MANAGER)),
+]
+# Whoever sees an inspection's report: its inspection company and whoever sees the elevator.
+ReportReader = Annotated[
+    User,
+    Depends(
+        require_role(
+            UserRole.INSPECTION,
+            UserRole.OWNER,
+            UserRole.MAINTENANCE,
+            UserRole.MUNICIPAL_MANAGER,
+        )
+    ),
 ]
 Status = Annotated[RequestStatus | None, Query(alias="status")]
 Text = Annotated[str | None, Query(max_length=100)]
@@ -55,6 +68,8 @@ def http_errors() -> Iterator[None]:
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "The inspection cannot be performed in the future",
         ) from None
+    except service.ReportMissing:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Inspection report not found") from None
     except reports.InvalidReport:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "The report must be a non-empty PDF up to 10 MB"
@@ -110,3 +125,15 @@ def submit_result(
     today = datetime.now(LOCAL_TIME).date()
     with http_errors():
         return service.submit_result(db, user, request_id, data, content, report.filename, today)
+
+
+@router.get(
+    "/requests/{request_id}/report",
+    response_class=FileResponse,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+def download_report(db: Db, user: ReportReader, request_id: int) -> FileResponse:
+    """The PDF report or certificate of a request's inspection (Submit Inspection Results)."""
+    with http_errors():
+        path, name = service.report_of(db, user, request_id)
+    return FileResponse(path, media_type="application/pdf", filename=name)

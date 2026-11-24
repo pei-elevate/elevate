@@ -40,3 +40,9 @@ def path(name: str) -> Path:
 
 def delete(name: str) -> None:
     path(name).unlink(missing_ok=True)
+
+
+def clear() -> None:
+    """Remove every report, when the sample data replaces all inspections."""
+    for report in settings.reports_dir.glob("*.pdf"):
+        report.unlink()
