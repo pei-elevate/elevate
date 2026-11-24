@@ -3,18 +3,19 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from api.accounts.models import User, UserRole
 from api.auth import require_role
 from api.database import get_db
-from api.inspections import service
+from api.inspections import reports, service
 from api.inspections.models import InspectionRequest, RequestStatus
 from api.inspections.schemas import (
     LOCAL_TIME,
     AssignedRequestOut,
     RequestStatusOut,
+    ResultIn,
     ScheduleRequest,
 )
 
@@ -44,6 +45,19 @@ def http_errors() -> Iterator[None]:
     except service.ScheduleInPast:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "The inspection cannot be scheduled in the past"
+        ) from None
+    except service.RequestNotCompletable:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Only a scheduled request can take a result"
+        ) from None
+    except service.PerformedInFuture:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "The inspection cannot be performed in the future",
+        ) from None
+    except reports.InvalidReport:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "The report must be a non-empty PDF up to 10 MB"
         ) from None
 
 
@@ -79,3 +93,20 @@ def schedule_request(
     now = datetime.now(LOCAL_TIME).replace(tzinfo=None)
     with http_errors():
         return service.schedule_request(db, user, request_id, body.scheduled_at, now)
+
+
+@router.post("/requests/{request_id}/result", response_model=AssignedRequestOut)
+def submit_result(
+    db: Db,
+    user: InspectionUser,
+    request_id: int,
+    data: Annotated[ResultIn, Form()],
+    report: Annotated[UploadFile, File()],
+) -> InspectionRequest:
+    """Record the verdict and the PDF report of a scheduled inspection (Submit Inspection
+    Results). Sent as multipart/form-data: the fields of ResultIn and the file report."""
+    # One byte over the limit is enough to know it is too large, without reading it all.
+    content = report.file.read(reports.MAX_BYTES + 1)
+    today = datetime.now(LOCAL_TIME).date()
+    with http_errors():
+        return service.submit_result(db, user, request_id, data, content, report.filename, today)
