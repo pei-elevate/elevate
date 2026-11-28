@@ -30,6 +30,14 @@ cp .env.example .env   # then replace the passwords with random values
 docker compose up -d --build
 ```
 
+Then load the sample data (the users, elevators and permits the frontend uses). Until Authentik is connected, the backend identifies the caller by the seed users, so without this every request returns 401:
+
+```sh
+docker compose exec backend python -m api.seed
+```
+
+It empties every table first, so run it again whenever you want a clean start, and also after `docker compose down -v`. Development only: never run it against real data.
+
 Every variable has a development default, so it also starts without a `.env`. The database password is only applied when its volume is created: if you change `POSTGRES_PASSWORD` later, run `docker compose down -v` first (this deletes the local database).
 
 | Address | What |
