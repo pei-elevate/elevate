@@ -152,6 +152,14 @@
   padding: 40px 48px 24px;
   min-height: 100vh;
   max-width: 2000px;
+  animation: page-in var(--dur-base) var(--ease-out);
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 .app-shell > main:focus {
