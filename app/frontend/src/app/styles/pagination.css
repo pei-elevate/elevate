@@ -1,0 +1,55 @@
+/* Navegação entre páginas das listas (shared/ui/Pagination.tsx). */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pagination-range {
+  margin-right: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.pagination-button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #bdcfd5;
+  border-radius: 7px;
+  background: white;
+  color: var(--petrol);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #edf4f5;
+}
+
+.pagination-button:disabled {
+  color: #9fb3ba;
+  border-color: var(--line);
+  cursor: default;
+}
+
+.pagination-button[aria-current='page'] {
+  background: var(--petrol);
+  border-color: var(--petrol);
+  color: white;
+}
+
+.pagination-gap {
+  padding: 0 2px;
+  color: var(--muted);
+}
+
+/* Rodapé só com a paginação (listas que não tinham rodapé). */
+.pagination-footer {
+  justify-content: flex-end;
+}

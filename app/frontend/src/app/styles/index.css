@@ -3,6 +3,7 @@
 @import './base.css';
 @import './shell.css';
 @import './ui.css';
+@import './pagination.css';
 @import './cards.css';
 @import './search.css';
 @import './calendar.css';
