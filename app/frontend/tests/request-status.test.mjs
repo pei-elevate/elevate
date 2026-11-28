@@ -285,7 +285,7 @@ test('a carga dos recentes entrega-os já convertidos', async () => {
   assert.equal(onLoad.mock.calls[0][0][2].result, 'Reprovada');
 });
 
-test('o proprietário vê no painel o estado, a data marcada e o resultado', async () => {
+test('o proprietário vê no painel só os dois pedidos mais recentes, com o estado e a data', async () => {
   stubApi(
     () => [],
     () => [],
@@ -297,7 +297,18 @@ test('o proprietário vê no painel o estado, a data marcada e o resultado', asy
   assert.match(main(), /A aguardar agendamento/);
   // Agendado: quando é a inspeção.
   assert.match(main(), /19\/11\/2026, 10:00/);
-  // Concluído: o resultado oficial.
+  // O terceiro, mais antigo, já não aparece nos cartões.
+  assert.doesNotMatch(main(), /Processo n\.º 2025\/0118/);
+});
+
+test('um pedido concluído entre os dois mais recentes mostra o resultado', async () => {
+  stubApi(
+    () => [],
+    () => [],
+    () => [recent[2], recent[0]],
+  );
+  await mount('proprietario', '/painel');
+
   assert.match(main(), /Processo n\.º 2025\/0118/);
   assert.match(main(), /Reprovada/);
 });

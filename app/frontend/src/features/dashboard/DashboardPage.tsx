@@ -161,7 +161,8 @@ export function DashboardPage() {
           <RecentRequestsState />
         ) : (
           <div className="request-cards">
-            {s.recentRequests.map((r) => (
+            {/* Só os dois pedidos mais recentes (a API já os devolve do mais novo para o mais antigo). */}
+            {s.recentRequests.slice(0, 2).map((r) => (
               <RequestCard key={r.id} request={r} />
             ))}
             {!s.recentRequests.length && <Empty>Ainda não há pedidos de inspeção.</Empty>}
