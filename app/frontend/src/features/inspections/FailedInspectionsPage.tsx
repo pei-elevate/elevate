@@ -8,6 +8,7 @@ import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
+import { Pagination, usePagination } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { Search } from '@/shared/ui/Search';
 import { Tabs } from '@/shared/ui/Tabs';
@@ -56,6 +57,8 @@ export function FailedInspectionsPage() {
     );
   }
 
+  const pages = usePagination(rows, { reset: `${status}|${query}` });
+
   return (
     <>
       <Heading
@@ -96,7 +99,7 @@ export function FailedInspectionsPage() {
             ...(manager ? [] : ['Ação']),
           ]}
         >
-          {rows.map((f) => {
+          {pages.items.map((f) => {
             const e = s.elevators.find((e) => e.id === f.elevator)!;
             const active = s.requests.find(
               (r) => r.elevator === f.elevator && r.status !== 'Concluído',
@@ -166,6 +169,7 @@ export function FailedInspectionsPage() {
             </tr>
           )}
         </DataTable>
+        <Pagination pagination={pages} footer />
       </Panel>
     </>
   );

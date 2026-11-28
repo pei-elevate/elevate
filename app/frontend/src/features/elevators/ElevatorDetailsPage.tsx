@@ -22,6 +22,7 @@ import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
+import { Paged } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { Summary } from '@/shared/ui/Summary';
 import { Tabs } from '@/shared/ui/Tabs';
@@ -140,110 +141,131 @@ export function ElevatorDetailsPage() {
     );
   }
 
+  // Cada histórico mostra cinco linhas por página: cresce com os anos de vida do elevador.
   const inspectionTable = (
-    <DataTable
-      headers={[
-        'N.º de processo',
-        'Data do processo',
-        'Âmbito',
-        'Empresa de inspeção',
-        'Data da inspeção',
-        'Resultado',
-        'Relatório',
-      ]}
-    >
-      {history.map((h) => (
-        <tr key={h.entry}>
-          <td>
-            <strong>{h.entry}</strong>
-          </td>
-          <td>{formatDate(h.date)}</td>
-          <td>{h.scope}</td>
-          <td>{h.inspector}</td>
-          <td>{formatDate(h.performed)}</td>
-          <td>
-            <Badge>{h.result}</Badge>
-          </td>
-          <td>
-            <button
-              className="text-button"
-              aria-label={`Descarregar relatório ${h.entry}`}
-              onClick={() => download({ id: h.entry, key: h.key, result: h.result })}
-            >
-              <Icon name="download" />
-              Descarregar relatório
-            </button>
-          </td>
-        </tr>
-      ))}
-      {!inspections.data ? (
-        <HistoryState colSpan={7} error={inspections.error} onRetry={inspections.retry} />
-      ) : (
-        !history.length && (
-          <tr>
-            <td colSpan={7}>
-              <Empty>Ainda não há inspeções concluídas para este elevador.</Empty>
-            </td>
-          </tr>
-        )
+    <Paged items={history} size={5}>
+      {(rows, navigation) => (
+        <>
+          <DataTable
+            headers={[
+              'N.º de processo',
+              'Data do processo',
+              'Âmbito',
+              'Empresa de inspeção',
+              'Data da inspeção',
+              'Resultado',
+              'Relatório',
+            ]}
+          >
+            {rows.map((h) => (
+              <tr key={h.entry}>
+                <td>
+                  <strong>{h.entry}</strong>
+                </td>
+                <td>{formatDate(h.date)}</td>
+                <td>{h.scope}</td>
+                <td>{h.inspector}</td>
+                <td>{formatDate(h.performed)}</td>
+                <td>
+                  <Badge>{h.result}</Badge>
+                </td>
+                <td>
+                  <button
+                    className="text-button"
+                    aria-label={`Descarregar relatório ${h.entry}`}
+                    onClick={() => download({ id: h.entry, key: h.key, result: h.result })}
+                  >
+                    <Icon name="download" />
+                    Descarregar relatório
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!inspections.data ? (
+              <HistoryState colSpan={7} error={inspections.error} onRetry={inspections.retry} />
+            ) : (
+              !history.length && (
+                <tr>
+                  <td colSpan={7}>
+                    <Empty>Ainda não há inspeções concluídas para este elevador.</Empty>
+                  </td>
+                </tr>
+              )
+            )}
+          </DataTable>
+          {navigation}
+        </>
       )}
-    </DataTable>
+    </Paged>
   );
 
   const noticeTable = (
-    <DataTable headers={['Data', 'Tipo', 'Assunto', 'Ofício']}>
-      {notices.map((n) => (
-        <tr key={n.id}>
-          <td>{formatDate(n.date)}</td>
-          <td>{n.type}</td>
-          <td>{n.subject}</td>
-          <td>
-            <button
-              className="text-button"
-              aria-label={`Ver ofício ${n.id}`}
-              onClick={() => s.setModal(noticeModal(e, n))}
-            >
-              Ver ofício <Icon name="arrow" />
-            </button>
-          </td>
-        </tr>
-      ))}
-      {!apiNotices.data ? (
-        <HistoryState colSpan={4} error={apiNotices.error} onRetry={apiNotices.retry} />
-      ) : (
-        !notices.length && (
-          <tr>
-            <td colSpan={4}>
-              <Empty>Sem avisos enviados.</Empty>
-            </td>
-          </tr>
-        )
+    <Paged items={notices} size={5}>
+      {(rows, navigation) => (
+        <>
+          <DataTable headers={['Data', 'Tipo', 'Assunto', 'Ofício']}>
+            {rows.map((n) => (
+              <tr key={n.id}>
+                <td>{formatDate(n.date)}</td>
+                <td>{n.type}</td>
+                <td>{n.subject}</td>
+                <td>
+                  <button
+                    className="text-button"
+                    aria-label={`Ver ofício ${n.id}`}
+                    onClick={() => s.setModal(noticeModal(e, n))}
+                  >
+                    Ver ofício <Icon name="arrow" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!apiNotices.data ? (
+              <HistoryState colSpan={4} error={apiNotices.error} onRetry={apiNotices.retry} />
+            ) : (
+              !notices.length && (
+                <tr>
+                  <td colSpan={4}>
+                    <Empty>Sem avisos enviados.</Empty>
+                  </td>
+                </tr>
+              )
+            )}
+          </DataTable>
+          {navigation}
+        </>
       )}
-    </DataTable>
+    </Paged>
   );
 
+  const complaints = s.complaints.filter((c) => c.elevator === e.id);
   const complaintTable = (
-    <DataTable headers={['Recebida em', 'Descrição', 'Respondida em', 'Estado']}>
-      {s.complaints
-        .filter((c) => c.elevator === e.id)
-        .map((c) => (
-          <tr key={c.id}>
-            <td>{formatDate(c.received)}</td>
-            <td>{c.description}</td>
-            <td>{formatDate(c.responded || '')}</td>
-            <td>
-              <Badge>{c.status}</Badge>
-            </td>
-          </tr>
-        ))}
-      {!s.complaints.some((c) => c.elevator === e.id) && (
-        <tr>
-          <td colSpan={4}>
-            <Empty>Sem reclamações registadas.</Empty>
-          </td>
-        </tr>
+    <Paged items={complaints} size={5}>
+      {(rows, navigation) => (
+        <>
+          <DataTable headers={['Recebida em', 'Descrição', 'Respondida em', 'Estado']}>
+            {rows.map((c) => (
+              <tr key={c.id}>
+                <td>{formatDate(c.received)}</td>
+                <td>{c.description}</td>
+                <td>{formatDate(c.responded || '')}</td>
+                <td>
+                  <Badge>{c.status}</Badge>
+                </td>
+              </tr>
+            ))}
+            {!complaints.length && (
+              <tr>
+                <td colSpan={4}>
+                  <Empty>Sem reclamações registadas.</Empty>
+                </td>
+              </tr>
+            )}
+          </DataTable>
+          {navigation}
+        </>
       )}
-    </DataTable>
+    </Paged>
   );
 
   return (

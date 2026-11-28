@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/Button';
 import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
+import { Pagination, usePagination } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { Search } from '@/shared/ui/Search';
 import { Tabs } from '@/shared/ui/Tabs';
@@ -26,6 +27,8 @@ export function ComplaintsPage() {
       )
     );
   });
+
+  const pages = usePagination(items, { reset: `${status}|${query}` });
 
   return (
     <>
@@ -62,7 +65,7 @@ export function ComplaintsPage() {
           )}
         </div>
         <DataTable headers={['Elevador / morada', 'Recebida em', 'Descrição', 'Estado', 'Ação']}>
-          {items.map((complaint) => (
+          {pages.items.map((complaint) => (
             <tr key={complaint.id}>
               <td>
                 <strong>{complaint.elevator}</strong>
@@ -94,7 +97,10 @@ export function ComplaintsPage() {
             </tr>
           )}
         </DataTable>
-        <div className="panel-footer">{items.length} reclamação(ões)</div>
+        <div className="panel-footer">
+          <span>{items.length} reclamação(ões)</span>
+          <Pagination pagination={pages} />
+        </div>
       </Panel>
     </>
   );

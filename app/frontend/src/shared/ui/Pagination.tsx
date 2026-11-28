@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 
 /** Linhas por página nas listas da aplicação. */
 export const PAGE_SIZE = 10;
@@ -47,6 +48,26 @@ export function usePagination<T>(items: T[], { size = PAGE_SIZE, reset = '' } = 
   }, [reset]);
 
   return { ...paginate(items, page, size), setPage };
+}
+
+/**
+ * Paginação para quem não pode chamar o hook (ex.: tabelas montadas depois de um `return`
+ * antecipado): entrega as linhas da página atual e a navegação, num rodapé próprio.
+ */
+export function Paged<T>({
+  items,
+  size,
+  reset,
+  children,
+}: {
+  items: T[];
+  size?: number;
+  reset?: string;
+  children: (visible: T[], navigation: ReactNode) => ReactNode;
+}) {
+  const pages = usePagination(items, { size, reset });
+
+  return <>{children(pages.items, <Pagination pagination={pages} footer />)}</>;
 }
 
 /**
