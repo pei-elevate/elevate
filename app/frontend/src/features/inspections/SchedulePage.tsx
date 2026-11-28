@@ -2,6 +2,7 @@ import { RequestTable } from '@/features/inspections/RequestTable';
 import { Banner } from '@/shared/ui/Banner';
 import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
+import { Pagination, usePagination } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { usePrototype } from '@/app/state';
 
@@ -10,6 +11,7 @@ export function SchedulePage() {
   const s = usePrototype();
   const loading = !s.assignedRequests && !s.assignedError;
   const items = (s.assignedRequests ?? []).filter((r) => r.status === 'Por agendar');
+  const pages = usePagination(items);
 
   return (
     <>
@@ -29,10 +31,11 @@ export function SchedulePage() {
         {loading ? (
           <p role="status">A carregar pedidos…</p>
         ) : (
-          <RequestTable items={items} assigned />
+          <RequestTable items={pages.items} assigned />
         )}
         <div className="panel-footer">
           <span>{items.length} pedido(s)</span>
+          <Pagination pagination={pages} />
         </div>
       </Panel>
     </>

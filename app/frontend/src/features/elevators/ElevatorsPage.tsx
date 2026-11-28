@@ -8,6 +8,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { Metric } from '@/shared/ui/Metric';
+import { Pagination, usePagination } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { Search } from '@/shared/ui/Search';
 import { Select } from '@/shared/ui/Select';
@@ -41,6 +42,8 @@ export function ElevatorsPage() {
   const clear = () => updateFilters(defaultElevatorFilters);
   // Só a empresa de manutenção os tem (o backend devolve apenas os que ela submeteu).
   const submitted = s.submittedRegistrations ?? [];
+  const elevatorPages = usePagination(items, { reset: JSON.stringify(filters) });
+  const submittedPages = usePagination(submitted);
 
   return (
     <>
@@ -125,11 +128,12 @@ export function ElevatorsPage() {
         )}
         {s.apiElevators && !s.apiElevatorsError ? (
           <>
-            <ElevatorTable items={items} registry={manager} />
+            <ElevatorTable items={elevatorPages.items} registry={manager} />
             <div className="panel-footer">
               <span>
                 {items.length} de {base.length} elevadores
               </span>
+              <Pagination pagination={elevatorPages} />
             </div>
           </>
         ) : (
@@ -139,7 +143,7 @@ export function ElevatorsPage() {
       {!owner && !manager && <RecentRequests page="inspecoes" />}
       {!owner && !manager && submitted.length > 0 && (
         <Panel title="Registos submetidos">
-          {submitted.map((r) => (
+          {submittedPages.items.map((r) => (
             <div className="pending-row" key={r.id}>
               <div>
                 <strong>{r.address}</strong>
@@ -158,6 +162,7 @@ export function ElevatorsPage() {
               )}
             </div>
           ))}
+          <Pagination pagination={submittedPages} footer />
         </Panel>
       )}
     </>

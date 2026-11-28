@@ -11,6 +11,7 @@ import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
 import { Metric } from '@/shared/ui/Metric';
+import { Pagination, usePagination } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { Tabs } from '@/shared/ui/Tabs';
 import { usePrototype } from '@/app/state';
@@ -20,6 +21,8 @@ export function DashboardPage() {
   const owner = s.route.role === 'proprietario';
   // A mesma lista da API que a página dos elevadores (o backend já filtra pelo perfil).
   const items = s.apiElevators ?? [];
+  // O proprietário vê todos os seus elevadores no painel; os outros perfis, os primeiros cinco.
+  const ownerPages = usePagination(items);
   // A vista fica no modelo para se manter ao voltar dos detalhes.
   const saved = s.dashboardView[s.route.role] || {
     view: 'Tabela',
@@ -146,7 +149,10 @@ export function DashboardPage() {
             setMonth={(value) => update({ month: value })}
           />
         ) : (
-          <ElevatorTable items={owner ? items : items.slice(0, 5)} compact={!owner} />
+          <>
+            <ElevatorTable items={owner ? ownerPages.items : items.slice(0, 5)} compact={!owner} />
+            {owner && <Pagination pagination={ownerPages} footer />}
+          </>
         )}
       </Panel>
       {/* Os pedidos de inspeção vêm da API: o estado, a data marcada e o resultado (ELEV-55). */}
@@ -155,7 +161,8 @@ export function DashboardPage() {
           <RecentRequestsState />
         ) : (
           <div className="request-cards">
-            {s.recentRequests.map((r) => (
+            {/* Só os dois pedidos mais recentes (a API já os devolve do mais novo para o mais antigo). */}
+            {s.recentRequests.slice(0, 2).map((r) => (
               <RequestCard key={r.id} request={r} />
             ))}
             {!s.recentRequests.length && <Empty>Ainda não há pedidos de inspeção.</Empty>}
