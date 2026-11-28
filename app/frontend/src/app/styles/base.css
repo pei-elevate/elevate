@@ -25,6 +25,12 @@
   --yellow: #ffcc57;
   --radius: 14px;
   --sidebar: 290px;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-press: 100ms;
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-exit: 160ms;
+  --stagger: 30ms;
 }
 
 * {
