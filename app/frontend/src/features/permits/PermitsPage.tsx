@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/Button';
 import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
+import { Pagination, usePagination } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { Tabs } from '@/shared/ui/Tabs';
 import { usePrototype } from '@/app/state';
@@ -54,6 +55,7 @@ export function PermitsPage() {
   const urban = s.route.role === 'urbanismo';
   const [tab, setTab] = useState('Todos');
   const items = visiblePermits(s.permits ?? [], tab, urban);
+  const pages = usePagination(items, { reset: tab });
 
   return (
     <>
@@ -93,7 +95,7 @@ export function PermitsPage() {
               ...(urban ? [] : ['Alerta', 'Ação']),
             ]}
           >
-            {items.map((p) => {
+            {pages.items.map((p) => {
               const alerted = s.alerted[p.id] ?? p.last_alert_at?.slice(0, 10);
 
               return (
@@ -154,6 +156,7 @@ export function PermitsPage() {
             })}
           </DataTable>
           {!items.length && <Empty />}
+          <Pagination pagination={pages} footer />
         </PermitsTableState>
       </Panel>
       {!urban && (

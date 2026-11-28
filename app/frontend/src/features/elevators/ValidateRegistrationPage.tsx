@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/Button';
 import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
+import { Pagination, usePagination } from '@/shared/ui/Pagination';
 import { Panel } from '@/shared/ui/Panel';
 import { Summary } from '@/shared/ui/Summary';
 import { usePrototype } from '@/app/state';
@@ -17,6 +18,7 @@ export function ValidateRegistrationPage() {
   const s = usePrototype();
   const role = s.route.role;
   const pending = s.pendingRegistrations;
+  const pendingPages = usePagination(pending ?? []);
   const [permits, setPermits] = useState<PermitSummary[]>([]);
   const [permitsError, setPermitsError] = useState(false);
   // Muda para voltar a pedir os alvarás ao backend.
@@ -144,7 +146,7 @@ export function ValidateRegistrationPage() {
       ) : (
         <div className="split-panel">
           <Panel title={`Por validar (${pending.length})`} className="selection-list">
-            {pending.map((r) => (
+            {pendingPages.items.map((r) => (
               <button
                 key={r.id}
                 className={`selection-item ${reg.id === r.id ? 'selected' : ''}`}
@@ -161,6 +163,7 @@ export function ValidateRegistrationPage() {
                 <span>{r.maintenance_company.name}</span>
               </button>
             ))}
+            <Pagination pagination={pendingPages} footer />
           </Panel>
           <Panel className="validation-panel">
             <div className="panel-heading">
