@@ -91,10 +91,11 @@ export function Pagination({
       <button
         type="button"
         className="pagination-button"
+        aria-label="Página anterior"
         onClick={() => setPage(page - 1)}
         disabled={page === 1}
       >
-        <span aria-hidden="true">‹</span> Anterior
+        <Chevron direction="left" />
       </button>
       {pageNumbers(page, pages).map((n, i) =>
         n === '…' ? (
@@ -118,13 +119,30 @@ export function Pagination({
       <button
         type="button"
         className="pagination-button"
+        aria-label="Página seguinte"
         onClick={() => setPage(page + 1)}
         disabled={page === pages}
       >
-        Seguinte <span aria-hidden="true">›</span>
+        <Chevron direction="right" />
       </button>
     </nav>
   );
 
   return footer ? <div className="panel-footer pagination-footer">{nav}</div> : nav;
+}
+
+/** Seta das páginas anterior e seguinte, na cor do texto do botão. */
+function Chevron({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path
+        d={direction === 'left' ? 'M10 3 5 8l5 5' : 'M6 3l5 5-5 5'}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }

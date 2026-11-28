@@ -59,8 +59,9 @@ test('Anterior e Seguinte ficam inativos nas pontas', () => {
   const first = render({ ...paginate(list(25), 1), setPage });
   const last = render({ ...paginate(list(25), 3), setPage });
 
-  assert.match(first, /disabled[^>]*>.*Anterior/s);
-  assert.match(last, /disabled[^>]*>Seguinte/s);
+  assert.match(first, /aria-label="Página anterior" disabled/);
+  assert.doesNotMatch(first, /aria-label="Página seguinte" disabled/);
+  assert.match(last, /aria-label="Página seguinte" disabled/);
 });
 
 test('com footer, fica num rodapé próprio', () => {

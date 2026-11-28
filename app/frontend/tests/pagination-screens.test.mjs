@@ -103,7 +103,9 @@ async function click(element) {
 }
 
 function button(label, scope = container) {
-  const found = [...scope.querySelectorAll('button')].find((b) => b.textContent.trim() === label);
+  const found = [...scope.querySelectorAll('button')].find(
+    (b) => b.textContent.trim() === label || b.getAttribute('aria-label') === label,
+  );
   assert.ok(found, `botão «${label}» em falta`);
   return found;
 }
@@ -118,9 +120,9 @@ test('a lista mostra 10 alvarás por página e muda de página', async () => {
     Array.from({ length: 10 }, (_, i) => `Rua Alvará ${i + 1}`),
   );
   assert.match(nav().textContent, /1–10 de 25/);
-  assert.ok(button('‹ Anterior', nav()).disabled);
+  assert.ok(button('Página anterior', nav()).disabled);
 
-  await click(button('Seguinte ›', nav()));
+  await click(button('Página seguinte', nav()));
   assert.equal(rows()[0], 'Rua Alvará 11');
   assert.match(nav().textContent, /11–20 de 25/);
 
@@ -132,14 +134,14 @@ test('a lista mostra 10 alvarás por página e muda de página', async () => {
     'Rua Alvará 24',
     'Rua Alvará 25',
   ]);
-  assert.ok(button('Seguinte ›', nav()).disabled);
+  assert.ok(button('Página seguinte', nav()).disabled);
 });
 
 test('mudar de separador volta à primeira página, e uma página só não tem navegação', async () => {
   stubApi();
   await mount('urbanismo', '/avisos');
   await until(() => assert.equal(rows().length, 10));
-  await click(button('Seguinte ›', nav()));
+  await click(button('Página seguinte', nav()));
   assert.equal(rows()[0], 'Rua Alvará 11');
 
   // «Por registar»: 20 alvarás, de volta à página 1.
