@@ -44,7 +44,7 @@ export function OwnerAddressFields({
               })}
         </div>
       </Panel>
-      <Panel title={registration ? 'Proprietário' : 'Proprietário e manutenção'}>
+      <Panel title="Proprietário">
         <div className="form-grid">
           {registration &&
             field('ownerType', 'Tipo de proprietário', {
@@ -57,18 +57,12 @@ export function OwnerAddressFields({
             { required: true },
           )}
           {field('nif', 'NIF', { required: true, placeholder: '9 algarismos' })}
-          {registration ? (
-            <>
-              {field('email', 'Correio eletrónico', {
-                type: 'email',
-                required: true,
-                placeholder: 'nome@exemplo.pt',
-              })}
-              {field('phone', 'Telefone', { type: 'tel', placeholder: 'Opcional' })}
-            </>
-          ) : (
-            field('company', 'Empresa de manutenção', { placeholder: 'Se conhecida' })
-          )}
+          {field('email', 'Correio eletrónico', {
+            type: 'email',
+            required: true,
+            placeholder: 'nome@exemplo.pt',
+          })}
+          {field('phone', 'Telefone', { type: 'tel', placeholder: 'Opcional' })}
         </div>
       </Panel>
     </>

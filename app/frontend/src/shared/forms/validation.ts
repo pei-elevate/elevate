@@ -20,6 +20,13 @@ export function validateOwnerAndAddress(v: Values, errors: Values) {
   if (!/^\d{9}$/.test(v.nif ?? '')) errors.nif = 'O NIF deve ter 9 algarismos.';
 }
 
+/** Email obrigatório, com a mesma regra no registo de elevador e no registo de alvará. */
+export function validateEmail(v: Values, errors: Values) {
+  // As partes do domínio não incluem o ponto, para a regex não recuar (backtracking) em textos longos.
+  if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(v.email ?? ''))
+    errors.email = 'Indique um endereço de correio eletrónico válido.';
+}
+
 /** O anexo, quando existe, tem de ser um PDF não vazio até 10 MB. */
 export function validateDocument(file: Upload | null, errors: Values) {
   if (
@@ -38,4 +45,20 @@ export function validateDateFields(v: Values, keys: string[], errors: Values) {
     if (v[key] && !isISODate(v[key]))
       errors[key] = 'Indique uma data válida no formato DD/MM/YYYY.';
   }
+}
+
+/**
+ * Se o ficheiro é mesmo um PDF: começa por «%PDF». A extensão e o tipo que o browser indica
+ * vêm só do nome, por isso um ficheiro de texto renomeado para .pdf passa por eles.
+ */
+export function startsAsPdf(file: Blob): Promise<boolean> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const bytes = new Uint8Array(reader.result as ArrayBuffer);
+      resolve(String.fromCharCode(...bytes) === '%PDF');
+    };
+    reader.onerror = () => resolve(false);
+    reader.readAsArrayBuffer(file.slice(0, 4));
+  });
 }

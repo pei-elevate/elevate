@@ -1,5 +1,11 @@
 # Elevate
 
+[![CI](https://github.com/pei-elevate/elevate/actions/workflows/ci.yml/badge.svg)](https://github.com/pei-elevate/elevate/actions/workflows/ci.yml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](app/frontend)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](compose.yml)
+
 Information system for the management and inspection of municipal elevators, developed for the Câmara Municipal de Aveiro as a Projeto em Engenharia Informática project at the Universidade de Aveiro.
 
 Project site: https://pei-elevate.github.io/elevate-site/
@@ -9,6 +15,7 @@ Project site: https://pei-elevate.github.io/elevate-site/
 | Path | What |
 | --- | --- |
 | `app/frontend/` | Web interface (React, TypeScript, Vite). It started as the clickable prototype from [`elevate-mockups`](https://github.com/pei-elevate/elevate-mockups) and is being turned into the MVP frontend. See its [README](app/frontend/README.md). |
+| `app/mydoc-fake/` | Stands in for the CMA's MyDoc, where inspection requests come from, until Elevate can reach the real one. See its [README](app/mydoc-fake/README.md). |
 | `app/backend/` | API (FastAPI, SQLAlchemy, Alembic). One package per area in `api/`: `accounts`, `elevators`, `permits`, `inspections`, `notices` and `mydoc`. |
 | `docs/` | Architecture, the data model (`database/schema.dbml`, open it in [dbdiagram.io](https://dbdiagram.io)) and plans. |
 | `infra/` | Configuration of the infrastructure services, such as the Nginx reverse proxy. |
@@ -30,6 +37,7 @@ Every variable has a development default, so it also starts without a `.env`. Th
 | http://localhost | Frontend |
 | http://localhost/api/health | Backend health check |
 | http://localhost/api/docs | API documentation (Swagger) |
+| http://localhost:8001/docs | Fake MyDoc: create an inspection request with `POST /registos` |
 | `localhost:5432` | PostgreSQL |
 
 The frontend and the backend reload when you save a file. The backend applies the database migrations (`alembic upgrade head`) when it starts.
@@ -93,6 +101,6 @@ The new file appears in `app/backend/alembic/versions/` on your machine (`--user
 We follow Git Flow:
 
 - `main` holds released code and `develop` holds the work for the next release. Both are protected: changes go through a pull request with one approval and an automatic Copilot review.
-- Start each change from `develop`, in a branch named after the Jira issue (for example `SCRUM-48-log-new-elevator-notice`), and open the pull request back into `develop` with the issue key in its title. It is merged with squash.
+- Start each change from `develop`, in a branch named after the Jira issue (for example `ELEV-48-log-new-elevator-notice`), and open the pull request back into `develop` with the issue key in its title. It is merged with squash.
 - Only `develop`, `release/*` and `hotfix/*` branches can open pull requests into `main`. They are merged with a merge commit, and releases and hotfixes are merged back into `develop`.
 - CI runs the frontend checks (lint, types, tests, build) and the backend checks (lint, format, tests) on every pull request.

@@ -1,4 +1,7 @@
 import { ElevatorTable } from '@/features/elevators/ElevatorTable';
+import { ElevatorsState } from '@/features/elevators/ElevatorsState';
+import { registrationStatusLabels } from '@/features/elevators/registration';
+import { RecentRequests } from '@/features/inspections/RecentRequests';
 import { defaultElevatorFilters, filterElevators } from '@/features/elevators/rules';
 import type { ElevatorFilters } from '@/features/elevators/types';
 import { Badge } from '@/shared/ui/Badge';
@@ -27,11 +30,8 @@ export function ElevatorsPage() {
   const setYear = (year: string) => updateFilters({ year });
   const owner = s.route.role === 'proprietario',
     manager = s.route.role === 'gestor';
-  const base = owner
-    ? s.elevators.filter((e) => e.owner === 'Condomínio Edifício Ria')
-    : manager
-      ? s.elevators
-      : s.elevators.filter((e) => e.company === 'Elevar, Lda.');
+  // O backend já só devolve os elevadores do perfil.
+  const base = s.apiElevators ?? [];
   const items = filterElevators(base, query, status).filter(
     (e) =>
       (parish === 'Todas' || e.parish === parish) &&
@@ -39,7 +39,8 @@ export function ElevatorsPage() {
       (year === 'Todos' || e.entryDate.startsWith(year)),
   );
   const clear = () => updateFilters(defaultElevatorFilters);
-  const pending = s.registrations.filter((r) => r.company === 'Elevar, Lda.');
+  // Só a empresa de manutenção os tem (o backend devolve apenas os que ela submeteu).
+  const submitted = s.submittedRegistrations ?? [];
 
   return (
     <>
@@ -122,30 +123,38 @@ export function ElevatorsPage() {
             </button>
           </div>
         )}
-        <ElevatorTable items={items} registry={manager} />
-        <div className="panel-footer">
-          <span>
-            {items.length} de {base.length} elevadores
-          </span>
-        </div>
+        {s.apiElevators && !s.apiElevatorsError ? (
+          <>
+            <ElevatorTable items={items} registry={manager} />
+            <div className="panel-footer">
+              <span>
+                {items.length} de {base.length} elevadores
+              </span>
+            </div>
+          </>
+        ) : (
+          <ElevatorsState error={s.apiElevatorsError} onRetry={s.reloadApiElevators} />
+        )}
       </Panel>
-      {!owner && !manager && pending.length > 0 && (
+      {!owner && !manager && <RecentRequests page="inspecoes" />}
+      {!owner && !manager && submitted.length > 0 && (
         <Panel title="Registos submetidos">
-          {pending.map((r) => (
+          {submitted.map((r) => (
             <div className="pending-row" key={r.id}>
               <div>
                 <strong>{r.address}</strong>
-                <small>{r.owner}</small>
+                <small>{r.owner.name}</small>
               </div>
-              <Badge>{r.status}</Badge>
+              <Badge>{registrationStatusLabels[r.registration_status]}</Badge>
               <span>
-                {r.reason ||
-                  (r.status === 'Por validar'
-                    ? 'A aguardar referência interna'
-                    : 'Registo analisado pelo município')}
+                {r.registration_status === 'rejected'
+                  ? r.rejected_reason
+                  : 'A aguardar referência interna'}
               </span>
-              {r.status === 'Rejeitado' && s.route.role === 'manutencao' && (
-                <Button onClick={() => s.go('registar', r.id)}>Corrigir e voltar a submeter</Button>
+              {r.registration_status === 'rejected' && (
+                <Button onClick={() => s.go('registar', String(r.id))}>
+                  Corrigir e voltar a submeter
+                </Button>
               )}
             </div>
           ))}

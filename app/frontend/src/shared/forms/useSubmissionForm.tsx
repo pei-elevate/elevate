@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
 import type { Values } from '@/shared/forms/types';
-import { formatDate, isISODate, parseDateInput } from '@/shared/lib/dates';
+import { startsAsPdf } from '@/shared/forms/validation';
+import { formatDate, isISODate, maskDate, maskTime, parseDateInput } from '@/shared/lib/dates';
 
 type FieldOptions = {
   type?: string;
@@ -51,15 +52,19 @@ export function useSubmissionForm({
 
   const field: FieldRenderer = (name, label, options = {}) => {
     const date = options.type === 'date';
+    const time = options.type === 'time';
     const hint = date
       ? [
           'Formato DD/MM/YYYY.',
-          options.min ? `A partir de ${formatDate(options.min)}.` : '',
-          options.max ? `Até ${formatDate(options.max)}.` : '',
+          // Um limite que ainda está a ser escrito noutro campo não é uma data: fica de fora.
+          options.min && isISODate(options.min) ? `A partir de ${formatDate(options.min)}.` : '',
+          options.max && isISODate(options.max) ? `Até ${formatDate(options.max)}.` : '',
         ]
           .filter(Boolean)
           .join(' ')
-      : options.hint;
+      : time
+        ? 'Formato HH:MM (24 horas).'
+        : options.hint;
     const props = {
       id: name,
       name,
@@ -96,8 +101,21 @@ export function useSubmissionForm({
             type="text"
             placeholder="DD/MM/YYYY"
             maxLength={10}
+            inputMode="numeric"
             value={isISODate(values[name] || '') ? formatDate(values[name]) : values[name] || ''}
-            onChange={(e) => change(name, parseDateInput(e.target.value) || e.target.value)}
+            onChange={(e) => {
+              const typed = maskDate(e.target.value);
+              change(name, parseDateInput(typed) || typed);
+            }}
+          />
+        ) : time ? (
+          <input
+            {...props}
+            type="text"
+            placeholder="HH:MM"
+            maxLength={5}
+            inputMode="numeric"
+            onChange={(e) => change(name, maskTime(e.target.value))}
           />
         ) : (
           <input
@@ -144,9 +162,11 @@ export function useSubmissionForm({
           accept="application/pdf,.pdf"
           hidden
           onChange={(e) => {
-            setFile(e.target.files?.[0] || null);
+            const chosen = e.target.files?.[0] || null;
+            setFile(chosen);
             dirty.current = true;
             setErrors((v) => ({ ...v, document: '' }));
+            if (chosen) void refuseIfNotPdf(chosen);
           }}
         />
         <button
@@ -187,6 +207,17 @@ export function useSubmissionForm({
     </div>
   );
 
+  /** Um ficheiro que não começa por %PDF sai logo, com o erro no campo, sem ir à API. */
+  async function refuseIfNotPdf(chosen: File) {
+    if (await startsAsPdf(chosen)) return;
+    setFile((current) => (current === chosen ? null : current));
+    if (fileInput.current) fileInput.current.value = '';
+    setErrors((v) => ({
+      ...v,
+      document: `O ficheiro «${chosen.name}» não é um PDF. Escolha o documento em PDF.`,
+    }));
+  }
+
   /** Valida; com erros, mostra-os e põe o foco no primeiro campo inválido; sem erros, continua. */
   function submit(event: FormEvent, validate: () => Values, onValid: () => void) {
     event.preventDefault();
@@ -206,13 +237,19 @@ export function useSubmissionForm({
     onValid();
   }
 
-  /** Gravação simulada: espera um pouco, aplica as alterações e limpa a marca de alterações. */
-  async function save(apply: () => void) {
+  /**
+   * Gravação: espera um pouco, aplica as alterações (que podem ir à API) e limpa a marca de
+   * alterações. Se `apply` falhar, o erro passa a quem chamou e as alterações ficam por guardar.
+   */
+  async function save(apply: () => void | Promise<void>) {
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    apply();
-    dirty.current = false;
-    setSaving(false);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await apply();
+      dirty.current = false;
+    } finally {
+      setSaving(false);
+    }
   }
 
   return {

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { RequestTable } from '@/features/inspections/RequestTable';
 import { formatDate } from '@/shared/lib/dates';
 import { normalize } from '@/shared/lib/text';
+import { Banner } from '@/shared/ui/Banner';
+import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { Metric } from '@/shared/ui/Metric';
 import { Panel } from '@/shared/ui/Panel';
@@ -16,21 +18,24 @@ export function InspectionsPage() {
     manager = s.route.role === 'gestor';
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('Todos');
-  const all = s.requests.filter(
+  // A empresa de inspeção vê os pedidos que lhe estão atribuídos; a empresa de manutenção e
+  // o gestor, os que acompanham. Todos vêm da API.
+  const loaded = assigned ? s.assignedRequests : s.trackedRequests;
+  const error = assigned ? s.assignedError : s.trackedError;
+  const loading = !loaded;
+  const all = loaded ?? [];
+  // Prazos da empresa de manutenção: os seus elevadores com o certificado a vencer.
+  const deadlines = s.apiElevators?.filter((e) => e.status === 'A vencer');
+  const items = all.filter(
     (r) =>
-      !maintenance || s.elevators.some((e) => e.id === r.elevator && e.company === 'Elevar, Lda.'),
-  );
-  const items = all.filter((r) => {
-    const e = s.elevators.find((e) => e.id === r.elevator);
-
-    return (
       (!maintenance || !['Agendado', 'Concluído'].includes(r.status)) &&
       // As inspeções concluídas ficam no histórico de cada elevador.
       (!manager || r.status !== 'Concluído') &&
       (status === 'Todos' || r.status === status) &&
-      normalize(`${r.id} ${r.elevator} ${e?.address} ${e?.company}`).includes(normalize(query))
-    );
-  });
+      normalize(`${r.id} ${r.elevator} ${r.address ?? ''} ${r.company ?? ''}`).includes(
+        normalize(query),
+      ),
+  );
 
   return (
     <>
@@ -49,22 +54,26 @@ export function InspectionsPage() {
       {maintenance && (
         <div className="two-columns">
           <Panel title="Prazos próximos">
-            {s.elevators
-              .filter((e) => e.status === 'A vencer' && e.company === 'Elevar, Lda.')
-              .map((e) => (
-                <div className="deadline-row" key={e.id}>
-                  <div>
-                    <strong>{e.id}</strong>
-                    <p>{e.address}</p>
-                  </div>
-                  <div>
-                    <strong>{formatDate(e.validUntil)}</strong>
-                    <small>Fim de validade do certificado</small>
-                  </div>
+            {s.apiElevatorsError ? (
+              <p>Não foi possível carregar os prazos.</p>
+            ) : (
+              !deadlines && <p role="status">A carregar prazos…</p>
+            )}
+            {deadlines?.map((e) => (
+              <div className="deadline-row" key={e.id}>
+                <div>
+                  <strong>{e.id}</strong>
+                  <p>{e.address}</p>
                 </div>
-              ))}
+                <div>
+                  <strong>{formatDate(e.validUntil)}</strong>
+                  <small>Fim de validade do certificado</small>
+                </div>
+              </div>
+            ))}
           </Panel>
           <Panel title="Visitas agendadas">
+            {loading && !error && <p role="status">A carregar visitas…</p>}
             {all
               .filter((r) => r.status === 'Agendado')
               .map((r) => (
@@ -75,15 +84,28 @@ export function InspectionsPage() {
                       {r.elevator} · {r.scope}
                     </strong>
                     <p>
-                      {s.elevators.find((e) => e.id === r.elevator)?.address} ·{' '}
-                      {r.scheduled.slice(11)}
+                      {r.address} · {r.scheduled.slice(11)}
                     </p>
-                    <small>Inspeave, Lda.</small>
+                    <small>{r.inspectionCompany}</small>
                   </div>
                 </div>
               ))}
           </Panel>
         </div>
+      )}
+      {error && (
+        <Banner
+          tone="warning"
+          action={
+            <Button onClick={assigned ? s.reloadAssignedRequests : s.reloadTrackedRequests}>
+              Tentar novamente
+            </Button>
+          }
+        >
+          {assigned
+            ? 'Não foi possível carregar os pedidos atribuídos.'
+            : 'Não foi possível carregar os pedidos de inspeção.'}
+        </Banner>
       )}
       {assigned && (
         <section className="metrics three">
@@ -133,7 +155,11 @@ export function InspectionsPage() {
             </button>
           </div>
         )}
-        <RequestTable items={items} assigned={assigned} open={maintenance} />
+        {loading && !error ? (
+          <p role="status">A carregar pedidos…</p>
+        ) : (
+          <RequestTable items={items} assigned={assigned} open={maintenance} />
+        )}
         <div className="panel-footer">
           <span>{items.length} pedido(s)</span>
         </div>

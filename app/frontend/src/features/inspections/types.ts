@@ -1,5 +1,6 @@
 export interface Request {
   id: string;
+  key?: number;
   elevator: string;
   date: string;
   scope: string;
@@ -9,4 +10,11 @@ export interface Request {
   performed?: string;
   report?: string;
   nonconformities?: string;
+  // Vindos da API; sem eles, a tabela procura o elevador nos dados de exemplo.
+  dge?: string;
+  address?: string;
+  company?: string;
+  inspectionCompany?: string;
+  // Id do elevador na API, para abrir a ficha.
+  elevatorKey?: number;
 }

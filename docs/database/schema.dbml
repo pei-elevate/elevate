@@ -125,12 +125,13 @@ Table permits {
 
   created_at timestamp [default: `now()`]
 
-  Note: 'Alvará do Urbanismo. O estado (não registado, parcialmente registado, por validar, registado) é calculado a partir dos elevadores ligados.'
+  Note: 'Alvará do Urbanismo. O estado (não registado, por validar, registado) é calculado a partir dos elevadores ligados.'
 }
 
 Table elevators {
   id int [pk, increment]
   internal_reference varchar [unique, null, note: 'Ex.: 01.05.0079. Atribuída quando o registo é aprovado, com o número seguinte de reference_counters. Único identificador oficial em Aveiro']
+  dge_number varchar [null, note: 'N.º de registo na DGE, quando conhecido']
 
   owner_id int [ref: > owners.id, not null]
   maintenance_company_id int [ref: > maintenance_companies.id, not null]

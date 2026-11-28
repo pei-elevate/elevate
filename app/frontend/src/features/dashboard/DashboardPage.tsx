@@ -1,10 +1,13 @@
 import { InspectionCalendar } from '@/features/dashboard/InspectionCalendar';
 import { RequestCard } from '@/features/dashboard/RequestCard';
 import { ElevatorTable } from '@/features/elevators/ElevatorTable';
+import { ElevatorsState } from '@/features/elevators/ElevatorsState';
+import { RecentRequests, RecentRequestsState } from '@/features/inspections/RecentRequests';
 import { noticeModal } from '@/features/notices/noticeModal';
 import { localToday } from '@/shared/lib/dates';
 import { Banner } from '@/shared/ui/Banner';
 import { Button } from '@/shared/ui/Button';
+import { Empty } from '@/shared/ui/Empty';
 import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
 import { Metric } from '@/shared/ui/Metric';
@@ -15,9 +18,8 @@ import { usePrototype } from '@/app/state';
 export function DashboardPage() {
   const s = usePrototype();
   const owner = s.route.role === 'proprietario';
-  const items = owner
-    ? s.elevators.filter((e) => e.owner === 'Condomínio Edifício Ria')
-    : s.elevators;
+  // A mesma lista da API que a página dos elevadores (o backend já filtra pelo perfil).
+  const items = s.apiElevators ?? [];
   // A vista fica no modelo para se manter ao voltar dos detalhes.
   const saved = s.dashboardView[s.route.role] || {
     view: 'Tabela',
@@ -135,7 +137,9 @@ export function DashboardPage() {
           </div>
         }
       >
-        {view === 'Calendário' ? (
+        {!s.apiElevators || s.apiElevatorsError ? (
+          <ElevatorsState error={s.apiElevatorsError} onRetry={s.reloadApiElevators} />
+        ) : view === 'Calendário' ? (
           <InspectionCalendar
             items={items}
             month={month}
@@ -145,15 +149,19 @@ export function DashboardPage() {
           <ElevatorTable items={owner ? items : items.slice(0, 5)} compact={!owner} />
         )}
       </Panel>
-      {owner && (
-        <div className="request-cards">
-          {s.requests
-            .filter((r) => items.some((e) => e.id === r.elevator))
-            .map((r) => (
+      {/* Os pedidos de inspeção vêm da API: o estado, a data marcada e o resultado (ELEV-55). */}
+      {owner &&
+        (!s.recentRequests || s.recentError ? (
+          <RecentRequestsState />
+        ) : (
+          <div className="request-cards">
+            {s.recentRequests.map((r) => (
               <RequestCard key={r.id} request={r} />
             ))}
-        </div>
-      )}
+            {!s.recentRequests.length && <Empty>Ainda não há pedidos de inspeção.</Empty>}
+          </div>
+        ))}
+      {!owner && <RecentRequests page="pedidos" />}
     </>
   );
 }

@@ -1,108 +1,102 @@
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { usePrototype } from '@/app/state';
+import { scheduleError, scheduleRequest } from '@/features/inspections/api';
 import {
   RequestBreadcrumb,
   RequestSummary,
   requestUnavailable,
-  useInspectionRequest,
+  useAssignedRequest,
 } from '@/features/inspections/inspectionRequest';
-import { updateSchedule } from '@/features/inspections/rules';
 import { validateSchedule } from '@/features/inspections/validation';
 import { FormShell } from '@/shared/forms/FormShell';
 import { useSubmissionForm } from '@/shared/forms/useSubmissionForm';
-import { formatDate, localToday } from '@/shared/lib/dates';
+import { localToday } from '@/shared/lib/dates';
+import { Banner } from '@/shared/ui/Banner';
 import { Heading } from '@/shared/ui/Heading';
 import { Panel } from '@/shared/ui/Panel';
 
 const title = 'Agendar inspeção';
 
+// Agendar um pedido por agendar (ELEV-52). O reagendamento fica para mais tarde: um pedido
+// já agendado não abre aqui.
 export function ScheduleInspectionForm() {
   const s = usePrototype();
-  const { request, elevator } = useInspectionRequest();
-  const rescheduling = request?.status === 'Agendado';
-  const form = useSubmissionForm({
-    dirty: s.dirty,
-    initial: {
-      time: '09:00',
-      ...(request?.scheduled
-        ? { date: request.scheduled.slice(0, 10), time: request.scheduled.slice(11) }
-        : {}),
-    },
-  });
+  const { request, loading } = useAssignedRequest();
+  const [saveError, setSaveError] = useState('');
+  const form = useSubmissionForm({ dirty: s.dirty, initial: { time: '09:00' } });
   const { values, field } = form;
-  const parent = rescheduling ? 'atribuidas' : 'agendar';
-  const back = () => s.go(parent);
+  const back = () => s.go('agendar');
 
   function submit(event: FormEvent) {
     form.submit(
       event,
       () => validateSchedule(values, form.file),
       () => {
-        if (rescheduling && request) {
-          s.confirm(
-            'Confirmar reagendamento',
-            `Alterar a inspeção de ${formatDate(request.scheduled)}, ${request.scheduled.slice(11)} para ${formatDate(values.date)}, ${values.time}?`,
-            () => {
-              void saveSchedule();
-            },
-            'Confirmar reagendamento',
-          );
-          return;
-        }
         void saveSchedule();
       },
     );
   }
 
   async function saveSchedule() {
-    await form.save(() => {
-      if (!request) return;
-      s.setRequests((items) => updateSchedule(items, request.id, values, s.route.role));
-      s.notify(
-        `${rescheduling ? 'Inspeção reagendada' : 'Inspeção agendada'}. A data está disponível nos perfis envolvidos. Não foram enviadas notificações reais.`,
-      );
-    });
+    if (request?.key === undefined) return;
+    const key = request.key;
+
+    setSaveError('');
+    try {
+      await form.save(async () => {
+        await scheduleRequest(s.route.role, key, `${values.date}T${values.time}`);
+        s.reloadAssignedRequests();
+        s.notify(
+          'Inspeção agendada. A data fica visível para a Câmara, a empresa de manutenção e o proprietário.',
+        );
+      });
+    } catch (error) {
+      setSaveError(scheduleError(error));
+      return;
+    }
     back();
   }
+
+  if (s.route.role === 'inspecao' && loading)
+    return (
+      <>
+        <Heading title={title} />
+        <p role="status">A carregar pedido…</p>
+      </>
+    );
 
   const unavailable = requestUnavailable(
     s.route.role,
     request,
-    elevator,
-    (status) => ['Por agendar', 'Agendado'].includes(status),
+    (status) => status === 'Por agendar',
     s.go,
   );
 
-  if (unavailable) return unavailable;
+  if (unavailable || !request) return unavailable;
 
   return (
     <>
-      <RequestBreadcrumb
-        label={rescheduling ? 'Inspeções atribuídas' : 'Agendar inspeções'}
-        onBack={back}
-        elevatorId={elevator?.id}
-      />
+      <RequestBreadcrumb label="Agendar inspeções" onBack={back} elevatorId={request.elevator} />
       <Heading
-        title={rescheduling ? 'Reagendar inspeção' : title}
-        description={`Processo n.º ${request?.id}`}
-        status={request?.status}
-        onBack={s.route.id ? () => s.back(parent) : undefined}
+        title={title}
+        description={`Processo n.º ${request.id}`}
+        status={request.status}
+        onBack={s.route.id ? () => s.back('agendar') : undefined}
       />
+      {saveError && (
+        <div role="alert">
+          <Banner tone="warning">{saveError}</Banner>
+        </div>
+      )}
       <FormShell
         form={form}
         title={title}
         onSubmit={submit}
         onCancel={back}
-        submitLabel={rescheduling ? 'Confirmar reagendamento' : 'Confirmar agendamento'}
+        submitLabel="Confirmar agendamento"
       >
-        <RequestSummary
-          request={request!}
-          elevator={elevator!}
-          extra={[
-            ['Proprietário', elevator!.owner],
-            ['Válido até', formatDate(elevator!.validUntil)],
-          ]}
-        />
+        <RequestSummary request={request} />
         <Panel title="Data e hora">
           <div className="form-grid">
             {field('date', 'Data da inspeção', {
@@ -116,10 +110,12 @@ export function ScheduleInspectionForm() {
         <Panel title="Destinatários do agendamento">
           <ul className="check-list">
             <li>Câmara Municipal de Aveiro</li>
-            <li>{elevator!.company} — manutenção</li>
-            <li>{elevator!.owner} — proprietário</li>
+            <li>{request.company} — manutenção</li>
+            <li>Proprietário do elevador</li>
           </ul>
-          <p className="muted inset">Neste protótipo, a informação é atualizada apenas no ecrã.</p>
+          <p className="muted inset">
+            A data fica visível nos perfis destes destinatários. Não são enviados emails.
+          </p>
         </Panel>
       </FormShell>
     </>

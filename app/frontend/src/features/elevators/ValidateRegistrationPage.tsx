@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
-import {
-  approveRegistration,
-  decisionError,
-  listPermits,
-  rejectRegistration,
-} from '@/features/elevators/api';
-import type { PermitSummary } from '@/features/elevators/api';
+import { approveRegistration, decisionError, rejectRegistration } from '@/features/elevators/api';
+import { listPermits } from '@/features/permits/api';
+import type { PermitSummary } from '@/features/permits/api';
 import { formatDate } from '@/shared/lib/dates';
 import { Badge } from '@/shared/ui/Badge';
 import { Banner } from '@/shared/ui/Banner';

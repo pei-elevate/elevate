@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -10,6 +12,14 @@ class Settings(BaseSettings):
     postgres_user: str
     postgres_password: str
     postgres_db: str
+
+    # MyDoc (api/mydoc). Without a URL, Elevate does not fetch inspection requests.
+    mydoc_url: str | None = None
+    mydoc_poll_seconds: float = 30
+    mydoc_timeout_seconds: float = 10
+
+    # Inspection reports (PDF). A Docker volume in compose.yml, so they survive restarts.
+    reports_dir: Path = Path("/data/reports")
 
     @property
     def database_url(self) -> URL:

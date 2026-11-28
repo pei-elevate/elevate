@@ -11,7 +11,7 @@ NIFs, emails, postal codes and dates missing from the mocks are made up.
 
 from datetime import date, datetime
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from api.accounts.models import (
@@ -24,6 +24,7 @@ from api.accounts.models import (
 )
 from api.database import Base, SessionLocal
 from api.elevators.models import Elevator, EquipmentType, ReferenceCounter, RegistrationStatus
+from api.inspections import reports
 from api.inspections.models import (
     FailedInspectionStatus,
     Inspection,
@@ -32,7 +33,7 @@ from api.inspections.models import (
     RequestStatus,
     RequestType,
 )
-from api.notices.models import Notice  # noqa: F401  (so every table is known to Base)
+from api.notices.models import Notice, NoticeType
 from api.permits.models import Permit
 
 POSTAL_CODE = "3810-000"
@@ -112,6 +113,12 @@ def seed(db: Session) -> None:
         email="ana.rodrigues@exemplo.pt",
         role=UserRole.URBAN_PLANNING,
     )
+    manager = User(
+        external_id="seed-municipal-manager",
+        name="Augusta Jesus",
+        email="augusta.jesus@exemplo.pt",
+        role=UserRole.MUNICIPAL_MANAGER,
+    )
     db.add_all(
         [
             User(
@@ -129,12 +136,7 @@ def seed(db: Session) -> None:
                 maintenance_company_id=elevar.id,
             ),
             urbanismo,
-            User(
-                external_id="seed-municipal-manager",
-                name="Augusta Jesus",
-                email="augusta.jesus@exemplo.pt",
-                role=UserRole.MUNICIPAL_MANAGER,
-            ),
+            manager,
             User(
                 external_id="seed-inspection",
                 name="Inspeave, Lda.",
@@ -188,10 +190,28 @@ def seed(db: Session) -> None:
     db.add_all(permits.values())
     db.flush()
 
+    # The missing-registration alert already sent for 097/2026 (alerted in permits/mocks.ts)
+    viseu = owners["Condomínio Viseu 30"]
+    db.add(
+        Notice(
+            type=NoticeType.MISSING_REGISTRATION,
+            permit_id=permits["097/2026"].id,
+            sent_by=manager.id,
+            subject="Elevador sem registo",
+            body=(
+                "O alvará 097/2026 inclui um elevador que ainda não foi registado na "
+                "plataforma elevate. Peça à empresa de manutenção que faça o registo."
+            ),
+            recipients=f"{viseu.name} <{viseu.email}>",
+            created_at=datetime(2026, 9, 28, 10, 0),
+        )
+    )
+
     # Registered elevators (elevators/mocks.ts)
     elevators = {
         reference: Elevator(
             internal_reference=reference,
+            dge_number=f"DGE-10{reference[-3:]}",
             owner_id=owners[owner].id,
             maintenance_company_id=maintenance[company].id,
             address=address,
@@ -260,7 +280,25 @@ def seed(db: Session) -> None:
         RequestStatus.COMPLETED,
         datetime(2025, 3, 3, 10, 0),
     )
-    db.add_all([failed_request, approved_request])
+    # Past inspections behind the certificate status of the mocks: 0079 due soon
+    # (inspectionHistory in the mocks) and 0154 overdue (its process number is made up).
+    due_soon_request = request(
+        "2024/0611",
+        "01.05.0079",
+        datetime(2024, 10, 2),
+        RequestType.PERIODIC,
+        RequestStatus.COMPLETED,
+        datetime(2024, 12, 14, 10, 0),
+    )
+    overdue_request = request(
+        "2024/0388",
+        "01.05.0154",
+        datetime(2024, 4, 15),
+        RequestType.PERIODIC,
+        RequestStatus.COMPLETED,
+        datetime(2024, 6, 20, 10, 0),
+    )
+    db.add_all([failed_request, approved_request, due_soon_request, overdue_request])
     db.flush()
 
     failed = Inspection(
@@ -279,7 +317,26 @@ def seed(db: Session) -> None:
         valid_until=date(2027, 3, 3),
         report_file="relatorio-2025-0118.pdf",
     )
-    db.add_all([failed, approved])
+    db.add_all(
+        [
+            failed,
+            approved,
+            Inspection(
+                request_id=due_soon_request.id,
+                performed_date=date(2024, 12, 14),
+                result=InspectionResult.APPROVED,
+                valid_until=date(2026, 12, 12),
+                report_file="relatorio-2024-0611.pdf",
+            ),
+            Inspection(
+                request_id=overdue_request.id,
+                performed_date=date(2024, 6, 20),
+                result=InspectionResult.APPROVED,
+                valid_until=date(2026, 6, 20),
+                report_file="relatorio-2024-0388.pdf",
+            ),
+        ]
+    )
     db.flush()
 
     # Open requests (requests in inspections/mocks.ts)
@@ -317,7 +374,94 @@ def seed(db: Session) -> None:
             ),
         ]
     )
+
+    # Notices of the elevators of Condomínio Edifício Ria (notices in the mocks)
+    ria = owners["Condomínio Edifício Ria"]
+    recipients = f"{ria.name} <{ria.email}>; {elevar.name} <{elevar.email}>"
+    db.add_all(
+        [
+            Notice(
+                type=NoticeType.INSPECTION_DUE,
+                elevator_id=elevators["01.05.0079"].id,
+                subject="Prazo da inspeção periódica",
+                body=(
+                    "A inspeção periódica do elevador 01.05.0079 deve ser feita nos próximos "
+                    "60 dias. Peça a inspeção à Câmara Municipal de Aveiro."
+                ),
+                recipients=recipients,
+                created_at=datetime(2026, 10, 13, 9, 0),
+            ),
+            Notice(
+                type=NoticeType.INSPECTION_REQUIRED,
+                elevator_id=elevators["01.05.0079"].id,
+                sent_by=manager.id,
+                subject="Inspeção necessária",
+                body=(
+                    "O elevador 01.05.0079 precisa de ser inspecionado. Peça a inspeção à "
+                    "Câmara Municipal de Aveiro com a maior brevidade."
+                ),
+                recipients=recipients,
+                created_at=datetime(2026, 11, 2, 11, 30),
+            ),
+            Notice(
+                type=NoticeType.INSPECTION_DUE,
+                elevator_id=elevators["01.05.0154"].id,
+                subject="Prazo da inspeção periódica",
+                body=(
+                    "A inspeção periódica do elevador 01.05.0154 deve ser feita nos próximos "
+                    "60 dias. Peça a inspeção à Câmara Municipal de Aveiro."
+                ),
+                recipients=recipients,
+                created_at=datetime(2026, 4, 21, 9, 0),
+            ),
+        ]
+    )
     db.commit()
+    write_sample_reports(db)
+
+
+def write_sample_reports(db: Session) -> None:
+    """A PDF for each sample inspection, so «Descarregar relatório» works on these data too.
+
+    The reports of the data the seed replaced are removed with them.
+    """
+    reports.clear()
+    reports.settings.reports_dir.mkdir(parents=True, exist_ok=True)
+    rows = db.execute(
+        select(Inspection.report_file, InspectionRequest.process_number).join(
+            InspectionRequest, Inspection.request_id == InspectionRequest.id
+        )
+    )
+    for report_file, process_number in rows:
+        reports.path(report_file).write_bytes(
+            sample_pdf(f"Relatorio de inspecao - processo {process_number} (exemplo)")
+        )
+
+
+def sample_pdf(line: str) -> bytes:
+    """A one-page PDF with one line of text (ASCII), written by hand to avoid a dependency."""
+    stream = f"BT /F1 14 Tf 72 760 Td ({line}) Tj ET".encode()
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+        b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream),
+    ]
+    pdf = b"%PDF-1.4\n"
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(pdf))
+        pdf += b"%d 0 obj\n%s\nendobj\n" % (number, body)
+    xref = len(pdf)
+    pdf += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    pdf += b"".join(b"%010d 00000 n \n" % offset for offset in offsets)
+    pdf += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objects) + 1,
+        xref,
+    )
+    return pdf
 
 
 def main() -> None:

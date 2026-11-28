@@ -1,4 +1,4 @@
-import { detailPage } from '@/features/elevators/links';
+import { canViewElevators, detailId, detailPage } from '@/features/elevators/links';
 import type { Request } from '@/features/inspections/types';
 import { formatDate } from '@/shared/lib/dates';
 import { Badge } from '@/shared/ui/Badge';
@@ -7,6 +7,7 @@ import { DataTable } from '@/shared/ui/DataTable';
 import { Empty } from '@/shared/ui/Empty';
 import { Icon } from '@/shared/ui/Icon';
 import { usePrototype } from '@/app/state';
+import { useReportDownload } from '@/features/inspections/useReportDownload';
 
 export function RequestTable({
   items,
@@ -18,6 +19,7 @@ export function RequestTable({
   open?: boolean;
 }) {
   const s = usePrototype();
+  const download = useReportDownload();
 
   return (
     <DataTable
@@ -40,17 +42,28 @@ export function RequestTable({
               <small>{formatDate(r.date)}</small>
             </td>
             <td>
-              <button
-                className="text-button"
-                onClick={() => s.go(detailPage(s.route.role), r.elevator)}
-              >
-                {r.elevator}
-              </button>
-              <small>{e?.dge}</small>
+              {canViewElevators(s.route.role) ? (
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    s.go(
+                      detailPage(s.route.role),
+                      r.elevatorKey === undefined
+                        ? detailId(r.elevator, s.apiElevators)
+                        : String(r.elevatorKey),
+                    )
+                  }
+                >
+                  {r.elevator}
+                </button>
+              ) : (
+                <strong>{r.elevator}</strong>
+              )}
+              <small>{r.dge ?? e?.dge}</small>
             </td>
             <td>
-              {e?.address}
-              <small>{e?.company}</small>
+              {r.address ?? e?.address}
+              <small>{r.company ?? e?.company}</small>
             </td>
             <td>{r.scope}</td>
             <td>
@@ -69,17 +82,15 @@ export function RequestTable({
                         Agendar
                       </Button>
                     ) : r.status === 'Agendado' ? (
+                      // Reagendar fica para mais tarde: quem pede a nova data ainda está por decidir.
                       <div className="row-actions">
                         <Button className="primary small" onClick={() => s.go('resultado', r.id)}>
                           Submeter resultado
                         </Button>
-                        <button className="text-button" onClick={() => s.go('agendar', r.id)}>
-                          Reagendar
-                        </button>
                       </div>
                     ) : (
                       r.status === 'Concluído' && (
-                        <button className="text-button" onClick={() => s.report(r.id, r.result)}>
+                        <button className="text-button" onClick={() => download(r)}>
                           <Icon name="download" />
                           Descarregar relatório
                         </button>

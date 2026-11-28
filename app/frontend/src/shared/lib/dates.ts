@@ -26,6 +26,25 @@ export function parseDateInput(value: string) {
   return isISODate(iso) ? iso : '';
 }
 
+/** Põe as barras de DD/MM/YYYY enquanto se escrevem os números: «15122030» → «15/12/2030». */
+export function maskDate(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+
+  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join('/');
+}
+
+/** Põe os dois pontos de HH:MM enquanto se escrevem os números: «1430» → «14:30». */
+export function maskTime(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+
+  return [digits.slice(0, 2), digits.slice(2)].filter(Boolean).join(':');
+}
+
+/** Hora válida de 24 horas, no formato HH:MM. */
+export function isTime(value: string) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
 export function localToday() {
   const d = new Date();
 

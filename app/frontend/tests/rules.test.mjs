@@ -11,11 +11,11 @@ import { validatePermit } from '@/features/permits/validation';
 import * as elevatorsMocks from '@/features/elevators/mocks';
 import * as elevatorsRules from '@/features/elevators/rules';
 import * as inspectionsMocks from '@/features/inspections/mocks';
-import * as inspectionsRules from '@/features/inspections/rules';
 import * as complaintsMocks from '@/features/complaints/mocks';
 import * as complaintsRules from '@/features/complaints/rules';
 import * as permitsMocks from '@/features/permits/mocks';
 import * as permitsRules from '@/features/permits/rules';
+import { elevatorCounts, permitStatusLabel } from '@/features/permits/rules';
 import * as noticesMocks from '@/features/notices/mocks';
 import * as noticesRules from '@/features/notices/rules';
 
@@ -38,7 +38,6 @@ const data = {
   ...elevatorsMocks,
   ...elevatorsRules,
   ...inspectionsMocks,
-  ...inspectionsRules,
   ...complaintsMocks,
   ...complaintsRules,
   ...permitsMocks,
@@ -361,27 +360,19 @@ test('regras do protótipo', () => {
       .status,
     'Aberta',
   );
-  assert.equal(typeof data.updateSchedule, 'function');
-  const rescheduled = data.updateSchedule(
-    data.requests,
-    '2026/0341',
-    { date: '2026-11-02', time: '14:30' },
-    'inspecao',
-  );
-  assert.equal(rescheduled.find((r) => r.id === '2026/0341').scheduled, '2026-11-02T14:30');
+  console.log('Regressões da auditoria: validade, reapresentação e permissões EMA: OK');
+});
+
+test('rótulos e contagens dos alvarás', () => {
+  assert.equal(permitStatusLabel('missing'), 'Por registar');
+  assert.equal(permitStatusLabel('pending'), 'Por validar');
+  assert.equal(permitStatusLabel('registered'), 'Registado');
   assert.equal(
-    data
-      .updateSchedule(data.requests, '2025/0118', { date: '2026-11-02', time: '14:30' }, 'inspecao')
-      .find((r) => r.id === '2025/0118').scheduled,
-    '2025-03-03T10:00',
+    elevatorCounts({ missing: 1, pending: 0, registered: 1 }),
+    '1 por registar · 0 por validar · 1 registado',
   );
   assert.equal(
-    data
-      .updateSchedule(data.requests, '2026/0341', { date: '2026-11-02', time: '14:30' }, 'gestor')
-      .find((r) => r.id === '2026/0341').scheduled,
-    '2026-11-19T10:00',
-  );
-  console.log(
-    'Regressões da auditoria: validade, reapresentação, permissões EMA e reagendamento: OK',
+    elevatorCounts({ missing: 0, pending: 1, registered: 0 }),
+    '0 por registar · 1 por validar · 0 registados',
   );
 });
